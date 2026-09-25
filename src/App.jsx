@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Microclimates from "./pages/Microclimates";
 import PlantDetails from "./pages/PlantDetails";
 import Register from "./pages/Register";
+import Schedules from "./pages/Schedules";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="garden" element={<Garden />} />
+          <Route path="schedules" element={<Schedules />} />
           <Route path="catalog" element={<Catalog />} />
           <Route path="catalog/:id" element={<CatalogDetails />} />
           <Route path="plants/add" element={<AddPlant />} />

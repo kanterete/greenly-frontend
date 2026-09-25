@@ -1,10 +1,11 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, Home, Leaf, LogOut, PlusCircle, Settings, Sprout } from "lucide-react";
+import { BookOpen, CalendarDays, Home, Leaf, LogOut, PlusCircle, Settings, Sprout } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
   { to: "/", label: "Pulpit", icon: Home },
   { to: "/garden", label: "Ogród", icon: Leaf },
+  { to: "/schedules", label: "Harmonogramy", icon: CalendarDays },
   { to: "/catalog", label: "Katalog", icon: BookOpen },
   { to: "/microclimates", label: "Mikroklimaty", icon: Settings },
 ];
@@ -12,6 +13,7 @@ const links = [
 const titles = {
   "/": "Pulpit główny",
   "/garden": "Wirtualny ogród",
+  "/schedules": "Harmonogramy pielęgnacji",
   "/catalog": "Katalog roślin",
   "/microclimates": "Mikroklimaty",
   "/plants/add": "Dodawanie rośliny",

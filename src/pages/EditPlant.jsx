@@ -2,32 +2,34 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
-import { plantCatalog } from "../data/catalog";
 
 export default function EditPlant() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [microclimates, setMicroclimates] = useState([]);
-  const [form, setForm] = useState({ microclimateId: "", externalSpeciesId: "", nickname: "", locationDescription: "", imageUrl: "" });
+  const [form, setForm] = useState({ microclimateId: "", nickname: "", locationDescription: "", imageUrl: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
     Promise.all([api.getPlant(id), api.getMicroclimates()])
       .then(([plantData, microData]) => {
+        if (!active) return;
         const plant = plantData.plant;
         setForm({
           microclimateId: String(plant.microclimateId || ""),
-          externalSpeciesId: plant.externalSpeciesId || "",
           nickname: plant.nickname || "",
           locationDescription: plant.locationDescription || "",
           imageUrl: plant.images?.[0]?.imageUrl || "",
         });
         setMicroclimates(microData.microclimates || []);
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => { if (active) setError(err.message); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [id]);
 
   const update = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -39,7 +41,6 @@ export default function EditPlant() {
     try {
       await api.updatePlant(id, {
         microclimateId: Number(form.microclimateId),
-        externalSpeciesId: form.externalSpeciesId || null,
         nickname: form.nickname,
         locationDescription: form.locationDescription || null,
         imageUrl: form.imageUrl || null,
@@ -61,12 +62,6 @@ export default function EditPlant() {
         <form className="form" onSubmit={submit}>
           <label>Nazwa
             <input name="nickname" value={form.nickname} onChange={update} required />
-          </label>
-          <label>Gatunek
-            <select name="externalSpeciesId" value={form.externalSpeciesId} onChange={update}>
-              <option value="">Brak</option>
-              {plantCatalog.map((plant) => <option key={plant.id} value={plant.id}>{plant.commonName}</option>)}
-            </select>
           </label>
           <label>Mikroklimat
             <select name="microclimateId" value={form.microclimateId} onChange={update} required>

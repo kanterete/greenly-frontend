@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 const TOKEN_KEY = "greenly_token";
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -39,6 +39,14 @@ export async function apiFetch(endpoint, options = {}) {
 }
 
 export const api = {
+  getWeather: (location, signal) => apiFetch(`/weather?${new URLSearchParams({ location })}`, { signal }),
+  getCatalog: (query = "", page = 1, signal) =>
+    apiFetch(
+      `/catalog?${new URLSearchParams({ q: query, page: String(page) })}`,
+      { signal },
+    ),
+  getCatalogPlant: (id, signal) =>
+    apiFetch(`/catalog/${encodeURIComponent(id)}`, { signal }),
   health: () => apiFetch("/health"),
   register: (email, password) =>
     apiFetch("/auth/register", {

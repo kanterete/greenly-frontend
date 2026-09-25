@@ -1,9 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 
 export default function AddMicroclimate() {
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const fromPlant = state?.fromPlant === true;
+  const plantFormPath = state?.draft?.externalSpeciesId
+    ? `/plants/add?species=${encodeURIComponent(state.draft.externalSpeciesId)}`
+    : "/plants/add";
   const [form, setForm] = useState({
     name: "",
     environmentType: "Indoor",
@@ -23,16 +28,26 @@ export default function AddMicroclimate() {
     setError("");
     setLoading(true);
     try {
-      await api.createMicroclimate({
+      const data = await api.createMicroclimate({
         name: form.name,
         environmentType: form.environmentType,
-        weatherSource: form.weatherSource || null,
+        weatherSource: form.environmentType === "Outdoor" ? "open-meteo" : null,
         location: form.location || null,
-        temperature: form.temperature ? Number(form.temperature) : null,
-        humidity: form.humidity ? Number(form.humidity) : null,
+        temperature: form.environmentType === "Indoor" && form.temperature ? Number(form.temperature) : null,
+        humidity: form.environmentType === "Indoor" && form.humidity ? Number(form.humidity) : null,
         lightLevel: form.lightLevel || null,
       });
-      navigate("/microclimates");
+      if (fromPlant) {
+        navigate(plantFormPath, {
+          replace: true,
+          state: {
+            selectedPlant: state.selectedPlant,
+            draft: { ...state.draft, microclimateId: String(data.microclimate.id) },
+          },
+        });
+      } else {
+        navigate("/microclimates");
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -45,6 +60,7 @@ export default function AddMicroclimate() {
       <div className="panel form-panel">
         <h2>Dodaj mikroklimat</h2>
         <p>Mikroklimat określa warunki, w których znajduje się roślina.</p>
+        {fromPlant && <p>Po zapisaniu wrócisz do dodawania rośliny. Nowy mikroklimat zostanie wybrany automatycznie.</p>}
         <form className="form two-columns" onSubmit={submit}>
           <label>Nazwa
             <input name="name" value={form.name} onChange={update} placeholder="np. Salon - strefa okienna" required />
@@ -56,17 +72,18 @@ export default function AddMicroclimate() {
             </select>
           </label>
           <label>Źródło pogody
-            <input name="weatherSource" value={form.weatherSource} onChange={update} placeholder="np. open-meteo" />
+            <input value={form.environmentType === "Outdoor" ? "Open-Meteo" : "Warunki ręczne"} readOnly />
           </label>
           <label>Lokalizacja
-            <input name="location" value={form.location} onChange={update} placeholder="np. Warszawa" />
+            <input name="location" value={form.location} onChange={update} placeholder="np. Warszawa lub 52.23, 21.01" required={form.environmentType === "Outdoor"} />
           </label>
-          <label>Temperatura
+          {form.environmentType === "Indoor" && <><label>Temperatura
             <input name="temperature" type="number" step="0.1" value={form.temperature} onChange={update} />
           </label>
           <label>Wilgotność
             <input name="humidity" type="number" step="0.1" value={form.humidity} onChange={update} />
           </label>
+          </>}
           <label className="full-field">Poziom światła
             <select name="lightLevel" value={form.lightLevel} onChange={update}>
               <option value="low">low</option>
@@ -76,7 +93,8 @@ export default function AddMicroclimate() {
             </select>
           </label>
           {error && <div className="error-box full-field">{error}</div>}
-          <button className="primary full-field" disabled={loading}>{loading ? "Zapisywanie..." : "Zapisz mikroklimat"}</button>
+          <button className="primary full-field" disabled={loading}>{loading ? "Zapisywanie..." : fromPlant ? "Zapisz i wróć do rośliny" : "Zapisz mikroklimat"}</button>
+          {fromPlant && !loading && <Link className="secondary full-field" to={plantFormPath} state={{ draft: state.draft, selectedPlant: state.selectedPlant }}>Wróć bez zapisywania</Link>}
         </form>
       </div>
     </section>

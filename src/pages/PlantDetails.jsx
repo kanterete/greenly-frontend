@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Droplet, Edit, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
-import { findCatalogPlant } from "../data/catalog";
 import {
   formatDate,
   formatDateTime,
@@ -115,8 +114,7 @@ export default function PlantDetails() {
   if (!plant)
     return <div className="error-box">{error || "Nie znaleziono rośliny"}</div>;
 
-  const catalog = findCatalogPlant(plant.externalSpeciesId);
-  const image = plant.images?.[0]?.imageUrl || catalog?.imageUrl;
+  const image = plant.images?.[0]?.imageUrl;
   const status = wateringStatus(plant);
 
   return (
@@ -134,11 +132,7 @@ export default function PlantDetails() {
               {status.label}
             </span>
             <h2>{plant.nickname}</h2>
-            <p>
-              {catalog?.commonName ||
-                plant.externalSpeciesId ||
-                "Roślina użytkownika"}
-            </p>
+            <p>{plant.externalSpeciesId || "Roślina użytkownika"}</p>
           </div>
           <div className="details-actions">
             <Link className="secondary" to={`/plants/${plant.id}/edit`}>
@@ -168,9 +162,7 @@ export default function PlantDetails() {
           </div>
         </div>
         <p className="description-text">
-          {catalog?.description ||
-            plant.locationDescription ||
-            "Brak opisu rośliny."}
+          {plant.locationDescription || "Brak opisu rośliny."}
         </p>
       </div>
 

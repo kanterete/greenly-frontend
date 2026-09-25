@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cronMessage, setCronMessage] = useState("");
+  const [cronLoading, setCronLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const nextPlants = useMemo(() => [...plants].sort((a, b) => new Date(getNextWatering(a) || 0) - new Date(getNextWatering(b) || 0)).slice(0, 3), [plants]);
 
   const triggerCron = async () => {
+    setCronLoading(true);
     setCronMessage("");
     try {
       const data = await api.triggerWeatherCron();
@@ -47,6 +49,8 @@ export default function Dashboard() {
       await load();
     } catch (err) {
       setCronMessage(err.message);
+    } finally {
+      setCronLoading(false);
     }
   };
 
@@ -75,7 +79,7 @@ export default function Dashboard() {
       <section className="panel wide">
         <div className="section-title">
           <div><h2>Najbliższe czynności</h2><p>Rośliny uporządkowane według terminu podlewania.</p></div>
-          <Link to="/garden">Zobacz ogród</Link>
+          <Link to="/schedules">Zobacz harmonogramy</Link>
         </div>
         {plants.length === 0 ? (
           <EmptyState
@@ -93,7 +97,7 @@ export default function Dashboard() {
           <CloudSun size={34} />
           <h3>Automatyzacja pogodowa</h3>
           <p>Ręcznie uruchom zadanie pogodowe i przelicz harmonogram roślin zewnętrznych.</p>
-          <button className="secondary full" onClick={triggerCron}>Uruchom CRON</button>
+          <button className="secondary full" disabled={cronLoading} onClick={triggerCron}>{cronLoading ? "Pobieranie pogody..." : "Przelicz podlewanie"}</button>
           {cronMessage && <small>{cronMessage}</small>}
         </div>
       </aside>

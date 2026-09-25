@@ -4,6 +4,7 @@ import { Home, Plus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import Loading from "../components/Loading";
+import WeatherSummary from "../components/WeatherSummary";
 
 export default function Microclimates() {
   const [items, setItems] = useState([]);
@@ -50,11 +51,11 @@ export default function Microclimates() {
               <div className="micro-icon"><Home size={22} /></div>
               <h3>{item.name}</h3>
               <p>{item.environmentType} • {item.location || "Brak lokalizacji"}</p>
-              <div className="micro-data">
+              {item.environmentType?.toLowerCase() === "outdoor" ? <WeatherSummary location={item.location} /> : <div className="micro-data">
                 <span>Temp. {item.temperature ?? "-"}°C</span>
                 <span>Wilg. {item.humidity ?? "-"}%</span>
                 <span>Światło: {item.lightLevel || "-"}</span>
-              </div>
+              </div>}
               <button className="ghost danger-text" onClick={() => remove(item.id)}><Trash2 size={16} /> Usuń</button>
             </article>
           ))}
