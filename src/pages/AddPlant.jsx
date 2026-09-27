@@ -1,7 +1,10 @@
+import { Droplet, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
+import { applyCatalogPlant } from "../utils/plantDraft";
 import Loading from "../components/Loading";
+import ImageUpload from "../components/ImageUpload";
 
 export default function AddPlant() {
   const [params] = useSearchParams();
@@ -15,17 +18,20 @@ export default function AddPlant() {
   const [microclimates, setMicroclimates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState(() => ({
     microclimateId: "",
     nickname: selectedPlant?.commonName || "",
     locationDescription: "",
-    frequencyDays: "7",
+    frequencyDays: String(selectedPlant?.wateringSuggestion?.days ?? ""),
+    frequencyEdited: false,
     imageUrl: selectedPlant?.imageUrl || "",
     ...draft,
     externalSpeciesId: selectedSpecies,
     ...(selectedPlant && draft?.externalSpeciesId !== selectedSpecies ? {
       nickname: selectedPlant.commonName, imageUrl: selectedPlant.imageUrl || "",
+      frequencyDays: String(selectedPlant.wateringSuggestion?.days ?? ""), frequencyEdited: false,
     } : {}),
   }));
 
@@ -42,10 +48,10 @@ export default function AddPlant() {
 
   useEffect(() => {
     if (!selectedSpecies) { setCatalogPlant(null); setSpeciesLoading(false); return; }
-    if (selectedPlant) {
+    if (selectedPlant?.detailsLoaded) {
       setCatalogPlant(selectedPlant);
       setSpeciesLoading(false);
-      setForm((prev) => prev.externalSpeciesId === selectedSpecies ? prev : ({ ...prev, externalSpeciesId: selectedSpecies, nickname: selectedPlant.commonName, imageUrl: selectedPlant.imageUrl || "" }));
+      setForm((prev) => applyCatalogPlant(prev, selectedPlant));
       return;
     }
     setSpeciesLoading(true);
@@ -54,9 +60,9 @@ export default function AddPlant() {
       .then(({ plant }) => {
         if (controller.signal.aborted) return;
         setCatalogPlant(plant);
-        setForm((prev) => ({ ...prev, externalSpeciesId: plant.id, nickname: plant.commonName, imageUrl: plant.imageUrl || "" }));
+        setForm((prev) => applyCatalogPlant({ ...prev, nickname: prev.nickname || plant.commonName, imageUrl: prev.imageUrl || plant.imageUrl || "" }, plant));
       })
-      .catch((err) => { if (!controller.signal.aborted) setError(err.message); })
+      .catch((err) => { if (!controller.signal.aborted) { setCatalogPlant(selectedPlant); setError(err.message); } })
       .finally(() => { if (!controller.signal.aborted) setSpeciesLoading(false); });
     return () => controller.abort();
   }, [selectedSpecies, selectedPlant]);
@@ -64,22 +70,26 @@ export default function AddPlant() {
   const update = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
-      const next = { ...prev, [name]: value };
+      const next = { ...prev, [name]: value, ...(name === "frequencyDays" ? { frequencyEdited: true } : {}) };
       return next;
     });
   };
 
   const submit = async (e) => {
     e.preventDefault();
+    if (uploading) return;
+    if (!Number.isInteger(Number(form.frequencyDays)) || Number(form.frequencyDays) < 1 || Number(form.frequencyDays) > 365) {
+      setError("Podaj częstotliwość od 1 do 365 dni."); return;
+    }
     setError("");
     setSaving(true);
     try {
       const data = await api.createPlant({
         microclimateId: Number(form.microclimateId),
         externalSpeciesId: form.externalSpeciesId || null,
-        nickname: form.nickname,
+        nickname: form.nickname.trim() || catalogPlant.commonName,
         locationDescription: form.locationDescription || null,
-        frequencyDays: Number(form.frequencyDays) || 7,
+        frequencyDays: Number(form.frequencyDays),
         imageUrl: form.imageUrl || null,
       });
       navigate(`/plants/${data.plant.id}`);
@@ -96,7 +106,7 @@ export default function AddPlant() {
     <section className="form-page split-form-page">
       <div className="panel form-panel">
         <h2>Dodaj roślinę</h2>
-        <p>Wybierz gatunek, mikroklimat i częstotliwość podlewania.</p>
+        <p>Wybierz gatunek i mikroklimat, a następnie sprawdź proponowaną częstotliwość podlewania.</p>
         {microclimates.length === 0 && (
           <div className="warning-box">Najpierw dodaj mikroklimat, aby można było przypisać roślinę.</div>
         )}
@@ -108,8 +118,8 @@ export default function AddPlant() {
               {catalogPlant ? "Zmień roślinę" : "Wybierz roślinę"}
             </Link>
           </div>
-          <label>Własna nazwa
-            <input name="nickname" value={form.nickname} onChange={update} required />
+          <label>Własna nazwa (opcjonalnie)
+            <input name="nickname" value={form.nickname} onChange={update} maxLength={255} placeholder={catalogPlant?.commonName || "Nazwa gatunku"} />
           </label>
           <label>Mikroklimat
             <select name="microclimateId" value={form.microclimateId} onChange={update} required>
@@ -123,21 +133,28 @@ export default function AddPlant() {
           <label>Opis lokalizacji
             <input name="locationDescription" value={form.locationDescription} onChange={update} placeholder="np. przy oknie" />
           </label>
-          <label>Częstotliwość podlewania co ile dni
-            <input name="frequencyDays" type="number" min="1" value={form.frequencyDays} onChange={update} />
+          <label>Bazowa częstotliwość podlewania (co ile dni)
+            <input name="frequencyDays" type="number" min="1" max="365" step="1" required value={form.frequencyDays} onChange={update} aria-describedby="watering-suggestion" />
           </label>
+          <div id="watering-suggestion">
+            <p>{catalogPlant?.wateringSuggestion?.description || "Wybierz gatunek. Jeśli nie ma propozycji, wpisz własny odstęp w dniach."}</p>
+            {form.frequencyEdited && <small>Ustawiono własną częstotliwość. </small>}
+            <small>Możesz zmienić propozycję. Mikroklimat i pogoda mogą później skorygować najbliższy termin.</small>
+            {form.frequencyEdited && catalogPlant?.wateringSuggestion?.days && <button type="button" className="secondary" onClick={() => setForm((prev) => ({ ...prev, frequencyDays: String(catalogPlant.wateringSuggestion.days), frequencyEdited: false }))}>Przywróć propozycję</button>}
+          </div>
           <label>Adres zdjęcia
             <input name="imageUrl" value={form.imageUrl} onChange={update} />
           </label>
+          <ImageUpload value={form.imageUrl} onChange={(imageUrl) => setForm((prev) => ({ ...prev, imageUrl }))} onBusyChange={setUploading} />
           {error && <div className="error-box">{error}</div>}
-          <button className="primary full" disabled={saving || !catalogPlant || microclimates.length === 0}>{saving ? "Dodawanie..." : "Dodaj roślinę"}</button>
+          <button className="primary full" disabled={saving || uploading || !catalogPlant || microclimates.length === 0}>{saving ? "Dodawanie..." : "Dodaj roślinę"}</button>
         </form>
       </div>
       <aside className="preview-card">
         {catalogPlant?.imageUrl && <img src={catalogPlant.imageUrl} alt={catalogPlant.commonName} />}
         <h3>{catalogPlant?.commonName || "Podgląd rośliny"}</h3>
         <p>{catalogPlant?.description}</p>
-        <div className="tag-row"><span>{catalogPlant?.watering}</span><span>{catalogPlant?.light}</span></div>
+        <div className="tag-row"><span className="care-tag care-tag-water"><Droplet size={15} aria-hidden="true" /> Podlewanie: {catalogPlant?.watering || "Brak danych"}</span><span className="care-tag care-tag-light"><Sun size={15} aria-hidden="true" /> Światło: {catalogPlant?.light || "Brak danych"}</span></div>
       </aside>
     </section>
   );

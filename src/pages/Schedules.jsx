@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, RefreshCw, Search } from "lucide-react";
 import { api } from "../api/client";
+import WateringRecalculation from "../components/WateringRecalculation";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import { daysUntil, formatDate } from "../utils/format";
@@ -47,6 +48,11 @@ export default function Schedules() {
       <div><h2>Harmonogramy</h2><p>Najbliższy termin każdej aktywnej czynności, od najpilniejszych.</p></div>
       <button className="secondary" onClick={() => setAttempt((value) => value + 1)} disabled={loading}><RefreshCw size={18} /> Odśwież</button>
     </div>
+    <WateringRecalculation onUpdated={async () => {
+      const data = await api.getPlants();
+      setPlants(data.plants || []);
+      setError("");
+    }} />
     {loading ? <Loading /> : error ? <div className="error-box" role="alert">{error}</div> : schedules.length === 0 ? (
       <EmptyState title="Brak aktywnych harmonogramów" description="Dodaj roślinę i ustaw częstotliwość podlewania, aby zobaczyć tutaj jej terminy." action={<Link className="primary" to="/plants/add">Dodaj roślinę</Link>} />
     ) : <>
@@ -56,7 +62,7 @@ export default function Schedules() {
         ))}
       </div>
       <div className="search-box"><Search size={18} /><input aria-label="Szukaj harmonogramu" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Szukaj rośliny, mikroklimatu lub czynności" /></div>
-      <p className="muted">Terminy uwzględniają zapisane korekty pogodowe. Częstotliwość oznacza bazowy odstęp między czynnościami.</p>
+      <p className="muted">Terminy uwzględniają zapisane korekty mikroklimatu i pogody. Częstotliwość oznacza bazowy odstęp między czynnościami.</p>
       {visible.length === 0 ? <EmptyState title="Brak pasujących harmonogramów" description="Zmień filtr lub wpisaną nazwę." /> : <div className="schedule-list">
         {visible.map((item) => <article className="schedule-card" key={item.id}>
           <div className="schedule-card-heading">

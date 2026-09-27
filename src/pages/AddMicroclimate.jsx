@@ -1,11 +1,16 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
+import Loading from "../components/Loading";
 
 export default function AddMicroclimate() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const editing = !!id;
+  const [fetching, setFetching] = useState(editing);
+  const [loaded, setLoaded] = useState(!editing);
   const { state } = useLocation();
-  const fromPlant = state?.fromPlant === true;
+  const fromPlant = !editing && state?.fromPlant === true;
   const plantFormPath = state?.draft?.externalSpeciesId
     ? `/plants/add?species=${encodeURIComponent(state.draft.externalSpeciesId)}`
     : "/plants/add";
@@ -20,6 +25,18 @@ export default function AddMicroclimate() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (editing) {
+      setFetching(true);
+      api.getMicroclimate(id).then(({ microclimate }) => {
+        if (!active) return;
+        setForm({ name: microclimate.name, environmentType: microclimate.environmentType.toLowerCase() === "outdoor" ? "Outdoor" : "Indoor", location: microclimate.location || "", temperature: microclimate.temperature ?? "", humidity: microclimate.humidity ?? "", lightLevel: microclimate.lightLevel || "medium" });
+        setLoaded(true);
+      }).catch((err) => { if (active) setError(err.message); }).finally(() => { if (active) setFetching(false); });
+    }
+    return () => { active = false; };
+  }, [id, editing]);
 
   const update = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -28,7 +45,7 @@ export default function AddMicroclimate() {
     setError("");
     setLoading(true);
     try {
-      const data = await api.createMicroclimate({
+      const payload = {
         name: form.name,
         environmentType: form.environmentType,
         weatherSource: form.environmentType === "Outdoor" ? "open-meteo" : null,
@@ -36,7 +53,8 @@ export default function AddMicroclimate() {
         temperature: form.environmentType === "Indoor" && form.temperature ? Number(form.temperature) : null,
         humidity: form.environmentType === "Indoor" && form.humidity ? Number(form.humidity) : null,
         lightLevel: form.lightLevel || null,
-      });
+      };
+      const data = editing ? await api.updateMicroclimate(id, payload) : await api.createMicroclimate(payload);
       if (fromPlant) {
         navigate(plantFormPath, {
           replace: true,
@@ -55,10 +73,11 @@ export default function AddMicroclimate() {
     }
   };
 
+  if (fetching) return <Loading />;
   return (
     <section className="form-page">
       <div className="panel form-panel">
-        <h2>Dodaj mikroklimat</h2>
+        <h2>{editing ? "Edytuj mikroklimat" : "Dodaj mikroklimat"}</h2>
         <p>Mikroklimat określa warunki, w których znajduje się roślina.</p>
         {fromPlant && <p>Po zapisaniu wrócisz do dodawania rośliny. Nowy mikroklimat zostanie wybrany automatycznie.</p>}
         <form className="form two-columns" onSubmit={submit}>
@@ -78,10 +97,10 @@ export default function AddMicroclimate() {
             <input name="location" value={form.location} onChange={update} placeholder="np. Warszawa lub 52.23, 21.01" required={form.environmentType === "Outdoor"} />
           </label>
           {form.environmentType === "Indoor" && <><label>Temperatura
-            <input name="temperature" type="number" step="0.1" value={form.temperature} onChange={update} />
+            <input name="temperature" type="number" min="-50" max="60" step="0.1" value={form.temperature} onChange={update} />
           </label>
           <label>Wilgotność
-            <input name="humidity" type="number" step="0.1" value={form.humidity} onChange={update} />
+            <input name="humidity" type="number" min="0" max="100" step="0.1" value={form.humidity} onChange={update} />
           </label>
           </>}
           <label className="full-field">Poziom światła
@@ -93,7 +112,8 @@ export default function AddMicroclimate() {
             </select>
           </label>
           {error && <div className="error-box full-field">{error}</div>}
-          <button className="primary full-field" disabled={loading}>{loading ? "Zapisywanie..." : fromPlant ? "Zapisz i wróć do rośliny" : "Zapisz mikroklimat"}</button>
+          <button className="primary full-field" disabled={loading || !loaded}>{loading ? "Zapisywanie..." : fromPlant ? "Zapisz i wróć do rośliny" : "Zapisz mikroklimat"}</button>
+          {editing && <Link className="secondary full-field" to="/microclimates">Wróć do mikroklimatów</Link>}
           {fromPlant && !loading && <Link className="secondary full-field" to={plantFormPath} state={{ draft: state.draft, selectedPlant: state.selectedPlant }}>Wróć bez zapisywania</Link>}
         </form>
       </div>

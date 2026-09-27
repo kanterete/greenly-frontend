@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
+import ImageUpload from "../components/ImageUpload";
 
 export default function EditPlant() {
   const { id } = useParams();
@@ -10,6 +11,7 @@ export default function EditPlant() {
   const [form, setForm] = useState({ microclimateId: "", nickname: "", locationDescription: "", imageUrl: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export default function EditPlant() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (uploading) return;
     setError("");
     setSaving(true);
     try {
@@ -74,8 +77,9 @@ export default function EditPlant() {
           <label>Nowe zdjęcie URL
             <input name="imageUrl" value={form.imageUrl} onChange={update} />
           </label>
+          <ImageUpload value={form.imageUrl} onChange={(imageUrl) => setForm((prev) => ({ ...prev, imageUrl }))} onBusyChange={setUploading} />
           {error && <div className="error-box">{error}</div>}
-          <button className="primary full" disabled={saving}>{saving ? "Zapisywanie..." : "Zapisz zmiany"}</button>
+          <button className="primary full" disabled={saving || uploading}>{saving ? "Zapisywanie..." : "Zapisz zmiany"}</button>
         </form>
       </div>
     </section>

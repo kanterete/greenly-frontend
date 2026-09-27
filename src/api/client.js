@@ -8,7 +8,7 @@ export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
 export async function apiFetch(endpoint, options = {}) {
   const token = getToken();
   const headers = {
-    "Content-Type": "application/json",
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {}),
   };
 
@@ -39,10 +39,15 @@ export async function apiFetch(endpoint, options = {}) {
 }
 
 export const api = {
+  uploadImage: async (file) => {
+    const body = new FormData(); body.append("image", file);
+    const result = await apiFetch("/uploads", { method: "POST", body });
+    return { imageUrl: new URL(result.imageUrl, new URL(API_URL, window.location.origin)).href };
+  },
   getWeather: (location, signal) => apiFetch(`/weather?${new URLSearchParams({ location })}`, { signal }),
-  getCatalog: (query = "", page = 1, signal) =>
+  getCatalog: (query = "", page = 1, signal, watering = "", order = "asc") =>
     apiFetch(
-      `/catalog?${new URLSearchParams({ q: query, page: String(page) })}`,
+      `/catalog?${new URLSearchParams({ q: query, page: String(page), watering, order })}`,
       { signal },
     ),
   getCatalogPlant: (id, signal) =>

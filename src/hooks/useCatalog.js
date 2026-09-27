@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 
-export function useCatalog(query, page) {
+export function useCatalog(query, page, watering = "", order = "asc") {
   const [state, setState] = useState({ plants: [], lastPage: 1, loading: true, error: "" });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     setState({ plants: [], lastPage: 1, loading: true, error: "" });
     const timer = setTimeout(() => {
-      api.getCatalog(query, page, controller.signal)
+      api.getCatalog(query, page, controller.signal, watering, order)
         .then((data) => { if (!controller.signal.aborted) setState({ ...data, loading: false, error: "" }); })
         .catch((err) => { if (!controller.signal.aborted) setState({ plants: [], lastPage: 1, loading: false, error: err.message }); });
     }, query.trim() ? 300 : 0);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [query, page, attempt]);
+  }, [query, page, watering, order, attempt]);
   return { ...state, retry: () => setAttempt((value) => value + 1) };
 }
 

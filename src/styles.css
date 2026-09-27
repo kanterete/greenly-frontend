@@ -688,6 +688,8 @@ textarea:focus {
 .catalog-back-button {
   margin-bottom: 22px;
 }
+.image-upload { display: grid; gap: 10px; }
+.upload-preview { width: 160px; height: 160px; object-fit: cover; border-radius: 16px; }
 .catalog-back-button:hover {
   background: #cce6bd;
 }
@@ -936,4 +938,39 @@ textarea:focus {
   .details-cover {
     height: 280px;
   }
+}
+
+.watering-recalculation { margin-block: 16px; }
+.recalculation-result { margin-top: 20px; }
+.recalculation-list { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.recalculation-card { padding: 18px; border: 1px solid var(--border); border-radius: 16px; overflow-wrap: anywhere; }
+.recalculation-card h4 { margin: 0; font-size: 18px; }
+.recalculation-card p { line-height: 1.6; }
+.recalculation-dates { display: flex; flex-wrap: wrap; gap: 16px 32px; }
+.recalculation-dates dt { font-size: 13px; }
+.recalculation-dates dd { margin: 6px 0 0; }
+
+.catalog-controls { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-start; margin: 20px 0; }
+.catalog-watering-filter { border: 0; padding: 0; margin: 0; min-width: 0; flex: 1 1 360px; }
+.catalog-watering-filter legend { font-weight: 600; margin-bottom: 10px; }
+.catalog-watering-filter .schedule-filters { margin: 0; }
+.catalog-order { display: grid; gap: 10px; font-weight: 600; }
+.catalog-order select { font: inherit; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: white; color: #183d2c; }
+.tag-row span { white-space: normal; overflow-wrap: anywhere; }
+.tag-row .care-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+.care-tag svg { flex-shrink: 0; }
+.tag-row .care-tag-water {
+  background: #e0f2fe;
+  color: #075985;
+  border-color: #bae6fd;
+}
+.tag-row .care-tag-light {
+  background: #fef3c7;
+  color: #854d0e;
+  border-color: #fde68a;
 }

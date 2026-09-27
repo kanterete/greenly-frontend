@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Home, Plus, Trash2 } from "lucide-react";
+import { Edit, Home, Plus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import Loading from "../components/Loading";
@@ -24,7 +24,7 @@ export default function Microclimates() {
   }, []);
 
   const remove = async (id) => {
-    if (!confirm("Usunąć mikroklimat?")) return;
+    if (!confirm("Usunąć mikroklimat wraz z przypisanymi roślinami i ich historią? Tej operacji nie można cofnąć.")) return;
     try {
       await api.deleteMicroclimate(id);
       load();
@@ -56,6 +56,7 @@ export default function Microclimates() {
                 <span>Wilg. {item.humidity ?? "-"}%</span>
                 <span>Światło: {item.lightLevel || "-"}</span>
               </div>}
+              <Link className="secondary" to={`/microclimates/${item.id}/edit`}><Edit size={16} /> Edytuj mikroklimat</Link>
               <button className="ghost danger-text" onClick={() => remove(item.id)}><Trash2 size={16} /> Usuń</button>
             </article>
           ))}

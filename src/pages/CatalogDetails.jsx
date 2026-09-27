@@ -10,14 +10,14 @@ export default function CatalogDetails() {
   const selecting = params.get("select") === "1";
   const { plant, loading, error, retry } = useCatalogPlant(id);
   if (loading) return <Loading />;
-  if (error || !plant) return <div className="error-box" role="alert">{error || "Nie znaleziono rośliny."} <button className="secondary" onClick={retry}>Spróbuj ponownie</button> <Link className="secondary" to={selecting ? "/catalog?select=1" : "/catalog"} state={state}><ArrowLeft size={18} /> Wróć do katalogu</Link></div>;
+  if (error || !plant) return <div className="error-box" role="alert">{error || "Nie znaleziono rośliny."} <button className="secondary" onClick={retry}>Spróbuj ponownie</button> <Link className="secondary" to={state?.catalogSearch || (selecting ? "/catalog?select=1" : "/catalog")} state={state}><ArrowLeft size={18} /> Wróć do katalogu</Link></div>;
 
   return (
     <section className="details-page">
       <div className="details-image">{plant.imageUrl ? <img src={plant.imageUrl} alt={plant.commonName} /> : <div className="image-placeholder">Brak zdjęcia</div>}</div>
       <div className="details-content">
         <p className="eyebrow">Katalog roślin</p>
-        <Link className="secondary catalog-back-button" to={selecting ? "/catalog?select=1" : "/catalog"} state={state}><ArrowLeft size={18} /> Wróć do katalogu</Link>
+        <Link className="secondary catalog-back-button" to={state?.catalogSearch || (selecting ? "/catalog?select=1" : "/catalog")} state={state}><ArrowLeft size={18} /> Wróć do katalogu</Link>
         <h2>{plant.commonName}</h2>
         <p className="latin">{plant.name}</p>
         <p>{plant.description}</p>

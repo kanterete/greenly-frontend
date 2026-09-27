@@ -31,6 +31,7 @@ export default function App() {
           <Route path="plants/:id/edit" element={<EditPlant />} />
           <Route path="microclimates" element={<Microclimates />} />
           <Route path="microclimates/add" element={<AddMicroclimate />} />
+          <Route path="microclimates/:id/edit" element={<AddMicroclimate />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

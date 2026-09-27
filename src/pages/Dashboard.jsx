@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarCheck, CloudSun, Droplet, Leaf, Plus, Sprout } from "lucide-react";
+import { CalendarCheck, Droplet, Leaf, Plus, Sprout } from "lucide-react";
 import { api } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import Loading from "../components/Loading";
+import WateringRecalculation from "../components/WateringRecalculation";
 import PlantCard from "../components/PlantCard";
 import { daysUntil, getNextWatering } from "../utils/format";
 
@@ -12,8 +13,6 @@ export default function Dashboard() {
   const [microclimates, setMicroclimates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [cronMessage, setCronMessage] = useState("");
-  const [cronLoading, setCronLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -40,18 +39,9 @@ export default function Dashboard() {
 
   const nextPlants = useMemo(() => [...plants].sort((a, b) => new Date(getNextWatering(a) || 0) - new Date(getNextWatering(b) || 0)).slice(0, 3), [plants]);
 
-  const triggerCron = async () => {
-    setCronLoading(true);
-    setCronMessage("");
-    try {
-      const data = await api.triggerWeatherCron();
-      setCronMessage(data.message || "Zadanie pogodowe wykonane");
-      await load();
-    } catch (err) {
-      setCronMessage(err.message);
-    } finally {
-      setCronLoading(false);
-    }
+  const refreshPlants = async () => {
+    const data = await api.getPlants();
+    setPlants(data.plants || []);
   };
 
   if (loading) return <Loading />;
@@ -92,15 +82,9 @@ export default function Dashboard() {
         )}
       </section>
 
-      <aside className="panel side-panel">
-        <div className="weather-box">
-          <CloudSun size={34} />
-          <h3>Automatyzacja pogodowa</h3>
-          <p>Ręcznie uruchom zadanie pogodowe i przelicz harmonogram roślin zewnętrznych.</p>
-          <button className="secondary full" disabled={cronLoading} onClick={triggerCron}>{cronLoading ? "Pobieranie pogody..." : "Przelicz podlewanie"}</button>
-          {cronMessage && <small>{cronMessage}</small>}
-        </div>
-      </aside>
+      <section className="panel full-row">
+        <WateringRecalculation onUpdated={refreshPlants} />
+      </section>
     </div>
   );
 }
