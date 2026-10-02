@@ -1,5 +1,26 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+function resolveApiUrl() {
+  let envUrl = (import.meta.env.VITE_API_URL || "").trim();
+  if (!envUrl) {
+    return "http://localhost:3000/api";
+  }
+  // Jeśli użytkownik podał adres bez protokołu (np. greenly-backend.up.railway.app), dodaj https://
+  if (!/^https?:\/\//i.test(envUrl)) {
+    const protocol =
+      envUrl.startsWith("localhost") || envUrl.startsWith("127.0.0.1") ? "http://" : "https://";
+    envUrl = `${protocol}${envUrl}`;
+  }
+  const clean = envUrl.replace(/\/+$/, "");
+  return clean.endsWith("/api") ? clean : `${clean}/api`;
+}
+
+const API_URL = resolveApiUrl();
 const TOKEN_KEY = "greenly_token";
+
+if (import.meta.env.PROD && API_URL.includes("localhost")) {
+  console.warn(
+    "[Greenly] Uwaga: VITE_API_URL wskazuje na localhost w środowisku produkcyjnym! Skonfiguruj zmienną środowiskową VITE_API_URL na adres backendu Railway i przebuduj frontend."
+  );
+}
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const saveToken = (token) => localStorage.setItem(TOKEN_KEY, token);
@@ -16,10 +37,21 @@ export async function apiFetch(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const targetUrl = `${API_URL}${normalizedEndpoint}`;
+
+  let response;
+  try {
+    response = await fetch(targetUrl, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    console.error(`Błąd sieciowy przy żądaniu do ${targetUrl}:`, err);
+    throw new Error(
+      `Brak połączenia z API (${targetUrl}). Upewnij się, że backend działa i nie jest blokowany przez CORS.`
+    );
+  }
 
   const text = await response.text();
   let data = null;
@@ -31,8 +63,17 @@ export async function apiFetch(endpoint, options = {}) {
   }
 
   if (!response.ok) {
-    const message = data?.message || "Wystąpił błąd podczas komunikacji z API";
-    throw new Error(message);
+    const backendMessage = data?.message || data?.error;
+    const isHtml = typeof data?.message === "string" && data.message.trim().startsWith("<");
+    const fallbackMessage =
+      !isHtml && typeof data?.message === "string" && data.message.trim()
+        ? data.message
+        : `Błąd serwera (${response.status} ${response.statusText || ""})`.trim();
+
+    const finalMessage =
+      backendMessage && !isHtml ? backendMessage : fallbackMessage || "Wystąpił błąd podczas komunikacji z API";
+    console.error(`Błąd API [${response.status}] ${targetUrl}:`, { data, status: response.status });
+    throw new Error(finalMessage);
   }
 
   return data;
