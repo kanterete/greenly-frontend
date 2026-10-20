@@ -3,10 +3,11 @@ function resolveApiUrl() {
   if (!envUrl) {
     return "http://localhost:3000/api";
   }
-  // Jeśli użytkownik podał adres bez protokołu (np. greenly-backend.up.railway.app), dodaj https://
   if (!/^https?:\/\//i.test(envUrl)) {
     const protocol =
-      envUrl.startsWith("localhost") || envUrl.startsWith("127.0.0.1") ? "http://" : "https://";
+      envUrl.startsWith("localhost") || envUrl.startsWith("127.0.0.1")
+        ? "http://"
+        : "https://";
     envUrl = `${protocol}${envUrl}`;
   }
   const clean = envUrl.replace(/\/+$/, "");
@@ -14,11 +15,12 @@ function resolveApiUrl() {
 }
 
 const API_URL = resolveApiUrl();
+
 const TOKEN_KEY = "greenly_token";
 
 if (import.meta.env.PROD && API_URL.includes("localhost")) {
   console.warn(
-    "[Greenly] Uwaga: VITE_API_URL wskazuje na localhost w środowisku produkcyjnym! Skonfiguruj zmienną środowiskową VITE_API_URL na adres backendu Railway i przebuduj frontend."
+    "[Greenly] Uwaga: VITE_API_URL wskazuje na localhost w środowisku produkcyjnym! Skonfiguruj zmienną środowiskową VITE_API_URL na adres backendu Railway i przebuduj frontend.",
   );
 }
 
@@ -29,7 +31,9 @@ export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
 export async function apiFetch(endpoint, options = {}) {
   const token = getToken();
   const headers = {
-    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+    ...(options.body instanceof FormData
+      ? {}
+      : { "Content-Type": "application/json" }),
     ...(options.headers || {}),
   };
 
@@ -37,7 +41,9 @@ export async function apiFetch(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const normalizedEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const normalizedEndpoint = endpoint.startsWith("/")
+    ? endpoint
+    : `/${endpoint}`;
   const targetUrl = `${API_URL}${normalizedEndpoint}`;
 
   let response;
@@ -49,7 +55,7 @@ export async function apiFetch(endpoint, options = {}) {
   } catch (err) {
     console.error(`Błąd sieciowy przy żądaniu do ${targetUrl}:`, err);
     throw new Error(
-      `Brak połączenia z API (${targetUrl}). Upewnij się, że backend działa i nie jest blokowany przez CORS.`
+      `Brak połączenia z API (${targetUrl}). Upewnij się, że backend działa i nie jest blokowany przez CORS.`,
     );
   }
 
@@ -64,15 +70,21 @@ export async function apiFetch(endpoint, options = {}) {
 
   if (!response.ok) {
     const backendMessage = data?.message || data?.error;
-    const isHtml = typeof data?.message === "string" && data.message.trim().startsWith("<");
+    const isHtml =
+      typeof data?.message === "string" && data.message.trim().startsWith("<");
     const fallbackMessage =
       !isHtml && typeof data?.message === "string" && data.message.trim()
         ? data.message
         : `Błąd serwera (${response.status} ${response.statusText || ""})`.trim();
 
     const finalMessage =
-      backendMessage && !isHtml ? backendMessage : fallbackMessage || "Wystąpił błąd podczas komunikacji z API";
-    console.error(`Błąd API [${response.status}] ${targetUrl}:`, { data, status: response.status });
+      backendMessage && !isHtml
+        ? backendMessage
+        : fallbackMessage || "Wystąpił błąd podczas komunikacji z API";
+    console.error(`Błąd API [${response.status}] ${targetUrl}:`, {
+      data,
+      status: response.status,
+    });
     throw new Error(finalMessage);
   }
 
@@ -81,11 +93,18 @@ export async function apiFetch(endpoint, options = {}) {
 
 export const api = {
   uploadImage: async (file) => {
-    const body = new FormData(); body.append("image", file);
+    const body = new FormData();
+    body.append("image", file);
     const result = await apiFetch("/uploads", { method: "POST", body });
-    return { imageUrl: new URL(result.imageUrl, new URL(API_URL, window.location.origin)).href };
+    return {
+      imageUrl: new URL(
+        result.imageUrl,
+        new URL(API_URL, window.location.origin),
+      ).href,
+    };
   },
-  getWeather: (location, signal) => apiFetch(`/weather?${new URLSearchParams({ location })}`, { signal }),
+  getWeather: (location, signal) =>
+    apiFetch(`/weather?${new URLSearchParams({ location })}`, { signal }),
   getCatalog: (query = "", page = 1, signal, watering = "", order = "asc") =>
     apiFetch(
       `/catalog?${new URLSearchParams({ q: query, page: String(page), watering, order })}`,
@@ -148,4 +167,6 @@ export const api = {
     apiFetch("/cron/trigger-weather", {
       method: "POST",
     }),
+  getWateringDemo: () => apiFetch("/weather/optimization-demo"),
+  getOptimizationHistory: (before, signal) => apiFetch(`/weather/optimization-history${before ? `?before=${encodeURIComponent(before)}` : ""}`, { signal }),
 };
