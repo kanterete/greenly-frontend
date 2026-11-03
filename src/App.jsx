@@ -13,6 +13,7 @@ import Microclimates from "./pages/Microclimates";
 import PlantDetails from "./pages/PlantDetails";
 import Register from "./pages/Register";
 import Schedules from "./pages/Schedules";
+import Profile from "./pages/Profile";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="microclimates" element={<Microclimates />} />
           <Route path="microclimates/add" element={<AddMicroclimate />} />
           <Route path="microclimates/:id/edit" element={<AddMicroclimate />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

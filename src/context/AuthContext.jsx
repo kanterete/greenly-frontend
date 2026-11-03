@@ -43,8 +43,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateUser = (updatedUser, newToken) => {
+    if (newToken) saveToken(newToken);
+    if (updatedUser) setUser(updatedUser);
+  };
+
   const value = useMemo(
-    () => ({ user, isCheckingAuth, isAuthenticated: Boolean(user), login, register, logout }),
+    () => ({ user, isCheckingAuth, isAuthenticated: Boolean(user), login, register, logout, updateUser }),
     [user, isCheckingAuth]
   );
 

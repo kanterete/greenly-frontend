@@ -1,6 +1,9 @@
 function resolveApiUrl() {
   let envUrl = (import.meta.env.VITE_API_URL || "").trim();
   if (!envUrl) {
+    if (typeof window !== "undefined" && window.location?.hostname) {
+      return `${window.location.protocol}//${window.location.hostname}:3000/api`;
+    }
     return "http://localhost:3000/api";
   }
   if (!/^https?:\/\//i.test(envUrl)) {
@@ -124,6 +127,16 @@ export const api = {
       body: JSON.stringify({ email, password }),
     }),
   me: () => apiFetch("/auth/me"),
+  updateProfile: (payload) =>
+    apiFetch("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  deleteAccount: (payload) =>
+    apiFetch("/auth/account", {
+      method: "DELETE",
+      body: JSON.stringify(payload || {}),
+    }),
   getMicroclimates: () => apiFetch("/microclimates"),
   getMicroclimate: (id) => apiFetch(`/microclimates/${id}`),
   createMicroclimate: (payload) =>

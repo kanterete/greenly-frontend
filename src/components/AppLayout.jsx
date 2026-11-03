@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, CalendarDays, Home, Leaf, LogOut, PlusCircle, Settings, Sprout } from "lucide-react";
+import { BookOpen, CalendarDays, Home, Leaf, LogOut, PlusCircle, Settings, Sprout, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   { to: "/schedules", label: "Harmonogramy", icon: CalendarDays },
   { to: "/catalog", label: "Katalog", icon: BookOpen },
   { to: "/microclimates", label: "Mikroklimaty", icon: Settings },
+  { to: "/profile", label: "Profil", icon: User },
 ];
 
 const titles = {
@@ -17,6 +18,7 @@ const titles = {
   "/catalog": "Katalog roślin",
   "/microclimates": "Mikroklimaty",
   "/plants/add": "Dodawanie rośliny",
+  "/profile": "Profil użytkownika",
 };
 
 export default function AppLayout() {
@@ -60,7 +62,10 @@ export default function AppLayout() {
             <h1>{title}</h1>
           </div>
           <div className="topbar-actions">
-            <span className="user-chip">{user?.email}</span>
+            <NavLink to="/profile" className="user-chip user-chip-link" title="Przejdź do profilu">
+              <User size={16} />
+              <span>{user?.email}</span>
+            </NavLink>
             <button className="primary compact" onClick={() => navigate("/plants/add")}>
               <PlusCircle size={18} /> Dodaj roślinę
             </button>
