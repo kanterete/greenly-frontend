@@ -31,7 +31,6 @@ export default function Profile() {
   const {
     isInstallable,
     isInstalled,
-    isStandalone,
     isIos,
     installApp,
     isPushSupported,
@@ -89,8 +88,8 @@ export default function Profile() {
       .then(([plants, microclimates]) => {
         if (isMounted) {
           setStats({
-            plantsCount: Array.isArray(plants) ? plants.length : 0,
-            microclimatesCount: Array.isArray(microclimates) ? microclimates.length : 0,
+            plantsCount: (Array.isArray(plants) ? plants : plants?.plants || []).length,
+            microclimatesCount: (Array.isArray(microclimates) ? microclimates : microclimates?.microclimates || []).length,
           });
         }
       })
@@ -244,401 +243,281 @@ export default function Profile() {
     }
   };
 
+  const initial = user?.email?.[0]?.toUpperCase() || "?";
+  const pushStatus = !isPushSupported
+    ? { label: "Niedostępne", tone: "neutral" }
+    : isSubscribed
+    ? { label: "Włączone", tone: "success" }
+    : pushPermission === "denied"
+    ? { label: "Zablokowane", tone: "danger" }
+    : { label: "Wyłączone", tone: "neutral" };
+
   return (
     <div className="profile-page">
-      {/* 1. Header Profile Hero */}
-      <section className="profile-hero panel">
-        <div className="profile-hero-content">
-          <div className="profile-avatar">
-            <User size={38} />
-          </div>
+      {/* Account summary */}
+      <section className="profile-summary">
+        <div className="profile-identity">
+          <span className="profile-avatar" aria-hidden="true">{initial}</span>
           <div className="profile-meta">
-            <span className="profile-badge">Aktywny ogrodnik</span>
             <h2>{user?.email}</h2>
-            <p className="profile-sub">
-              Konto zarejestrowane: <strong>{formatDate(user?.createdAt)}</strong>
-            </p>
+            <p className="profile-sub">Konto od {formatDate(user?.createdAt)}</p>
           </div>
         </div>
-
-        <div className="profile-stats-chips">
-          <div className="profile-stat-box">
-            <Leaf size={20} />
-            <div>
-              <span className="stat-label">Rośliny</span>
-              <strong>{isLoadingStats ? "..." : stats.plantsCount}</strong>
-            </div>
-          </div>
-          <div className="profile-stat-box">
-            <Sprout size={20} />
-            <div>
-              <span className="stat-label">Mikroklimaty</span>
-              <strong>{isLoadingStats ? "..." : stats.microclimatesCount}</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. PWA Installation Section */}
-      <section className="pwa-card panel">
-        <div className="pwa-header">
-          <div className="pwa-icon-badge">
-            <Smartphone size={28} />
+        <dl className="profile-stats">
+          <div>
+            <dt>Rośliny</dt>
+            <dd>{isLoadingStats ? "–" : stats.plantsCount}</dd>
           </div>
           <div>
-            <div className="pwa-title-row">
-              <h2>Zainstaluj aplikację Greenly (PWA)</h2>
-              {isInstalled ? (
-                <span className="status-pill success">
-                  <CheckCircle size={14} /> Zainstalowana
-                </span>
-              ) : (
-                <span className="status-pill warning">Dostępna instalacja</span>
-              )}
-            </div>
-            <p className="pwa-description">
-              Pobierz Greenly jako natywną aplikację na swój telefon lub komputer. Działa bez paska adresu przeglądarki,
-              uruchamia się błyskawicznie i ma dostęp do trybu offline.
-            </p>
+            <dt>Mikroklimaty</dt>
+            <dd>{isLoadingStats ? "–" : stats.microclimatesCount}</dd>
           </div>
-        </div>
-
-        <div className="pwa-benefits-grid">
-          <div className="pwa-benefit-item">
-            <div className="pwa-benefit-icon">
-              <Zap size={20} />
-            </div>
-            <div>
-              <strong>Błyskawiczne ładowanie</strong>
-              <p>Zapisane zasoby w Service Workerze gwarantują natychmiastowy start.</p>
-            </div>
-          </div>
-          <div className="pwa-benefit-item">
-            <div className="pwa-benefit-icon">
-              <Smartphone size={20} />
-            </div>
-            <div>
-              <strong>Ekran bez przeglądarki</strong>
-              <p>Działa w osobnym, pełnym oknie dokładnie jak aplikacja z App Store / Google Play.</p>
-            </div>
-          </div>
-          <div className="pwa-benefit-item">
-            <div className="pwa-benefit-icon">
-              <Sprout size={20} />
-            </div>
-            <div>
-              <strong>Zawsze pod ręką</strong>
-              <p>Własna ikona aplikacji bezpośrednio na pulpicie telefonu lub komputera.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="pwa-action-bar">
-          {isInstalled ? (
-            <div className="pwa-installed-message">
-              <CheckCircle size={20} className="check-icon" />
-              <div>
-                <strong>Aplikacja Greenly jest już zainstalowana na tym urządzeniu!</strong>
-                <p>Możesz uruchamiać ją bezpośrednio ze swojego ekranu początkowego lub menu aplikacji.</p>
-              </div>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="primary pwa-download-btn"
-                onClick={handleInstallClick}
-              >
-                <Download size={20} />
-                Pobierz i zainstaluj Greenly
-              </button>
-
-              {isIos && (
-                <div className="ios-instructions">
-                  <p>
-                    <strong>Instrukcja dla iOS (Safari):</strong>
-                  </p>
-                  <ol>
-                    <li>
-                      Dotknij ikony <strong>Udostępnij</strong> (kwadrat ze strzałką w górę na dolnym pasku).
-                    </li>
-                    <li>
-                      Wybierz opcję <strong>Do początku ekranu</strong> (Add to Home Screen).
-                    </li>
-                    <li>
-                      Kliknij <strong>Dodaj</strong> w prawym górnym rogu.
-                    </li>
-                  </ol>
-                </div>
-              )}
-
-              {!isIos && (
-                <p className="pwa-hint">
-                  Wskazówka: Możesz również kliknąć ikonkę instalacji w pasku adresu przeglądarki (obok gwiazdki/kłódki)
-                  lub wybrać opcję <em>„Zainstaluj aplikację Greenly”</em> w menu przeglądarki.
-                </p>
-              )}
-            </>
-          )}
-
-          {installFeedback && (
-            <div className="warning-box" style={{ marginTop: "14px" }}>
-              {installFeedback}
-            </div>
-          )}
-        </div>
+        </dl>
       </section>
 
-      {/* 3. Push Notifications & CRON Section */}
-      <section className="pwa-card panel push-notification-card">
-        <div className="pwa-header">
-          <div className="pwa-icon-badge push-badge">
-            <BellRing size={28} />
-          </div>
-          <div>
-            <div className="pwa-title-row">
-              <h2>Powiadomienia Web Push i CRON</h2>
-              {!isPushSupported ? (
-                <span className="status-pill danger">Brak wsparcia w tej przeglądarce</span>
-              ) : isSubscribed ? (
-                <span className="status-pill success">
-                  <CheckCircle size={14} /> Włączone (aktywne)
-                </span>
-              ) : (
-                <span className="status-pill neutral">Wyłączone</span>
-              )}
+      {/* App & notifications */}
+      <section className="settings-section">
+        <header className="settings-section-header">
+          <h3>Aplikacja</h3>
+          <p>Instalacja na urządzeniu i przypomnienia o pielęgnacji.</p>
+        </header>
+
+        <div className="settings-row">
+          <div className="settings-row-info">
+            <div className="settings-row-title">
+              <Smartphone size={18} />
+              <strong>Zainstaluj Greenly</strong>
+              {isInstalled && <span className="status-pill success">Zainstalowana</span>}
             </div>
-            <p className="pwa-description">
-              Otrzymuj powiadomienia o podlewaniu i pielęgnacji roślin bezpośrednio na swój telefon lub komputer, nawet
-              gdy aplikacja jest zamknięta.
+            <p>
+              Uruchamiaj Greenly z ekranu głównego jak zwykłą aplikację — bez paska przeglądarki i z szybszym startem.
             </p>
+            {!isInstalled && isIos && (
+              <ol className="inline-steps">
+                <li>W Safari dotknij <strong>Udostępnij</strong>.</li>
+                <li>Wybierz <strong>Do ekranu początkowego</strong>.</li>
+                <li>Potwierdź przyciskiem <strong>Dodaj</strong>.</li>
+              </ol>
+            )}
+            {installFeedback && <p className="settings-feedback">{installFeedback}</p>}
+          </div>
+          <div className="settings-row-action">
+            {isInstalled ? (
+              <span className="settings-state"><CheckCircle size={16} /> Na tym urządzeniu</span>
+            ) : (
+              !isIos && (
+                <button type="button" className="primary" onClick={handleInstallClick}>
+                  <Download size={16} /> Zainstaluj
+                </button>
+              )
+            )}
           </div>
         </div>
 
-        {pushMessage && <div className="pwa-success-box" style={{ marginBottom: "16px" }}>{pushMessage}</div>}
-        {pushError && <div className="error-box" style={{ marginBottom: "16px" }}>{pushError}</div>}
-
-        <div className="push-actions-row">
-          {isPushSupported && (
-            <button
-              type="button"
-              className={isSubscribed ? "secondary" : "primary"}
-              onClick={handleTogglePush}
-              disabled={isPushLoading}
-            >
+        <div className="settings-row">
+          <div className="settings-row-info">
+            <div className="settings-row-title">
               <Bell size={18} />
-              {isPushLoading
-                ? "Przetwarzanie..."
-                : isSubscribed
-                ? "Wyłącz powiadomienia na tym urządzeniu"
-                : "Włącz powiadomienia na tym urządzeniu"}
-            </button>
-          )}
-
-          {isSubscribed && (
-            <button
-              type="button"
-              className="secondary"
-              onClick={handleSendTestPush}
-              title="Wyślij testowe powiadomienie Push do tego urządzenia"
-            >
-              <Send size={18} />
-              Wyślij powiadomienie testowe
-            </button>
-          )}
+              <strong>Powiadomienia push</strong>
+              <span className={`status-pill ${pushStatus.tone}`}>{pushStatus.label}</span>
+            </div>
+            <p>
+              Codziennie o 8:00 dostaniesz przypomnienie, jeśli któraś roślina wymaga podlewania lub innej czynności.
+            </p>
+            {pushPermission === "denied" && (
+              <p className="settings-feedback">Powiadomienia są zablokowane w ustawieniach przeglądarki dla tej strony.</p>
+            )}
+            {pushMessage && <p className="settings-feedback success">{pushMessage}</p>}
+            {pushError && <p className="settings-feedback error">{pushError}</p>}
+          </div>
+          <div className="settings-row-action">
+            {isPushSupported && (
+              <>
+                {isSubscribed && (
+                  <button type="button" className="secondary" onClick={handleSendTestPush}>
+                    <Send size={16} /> Test
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={isSubscribed ? "secondary" : "primary"}
+                  onClick={handleTogglePush}
+                  disabled={isPushLoading || pushPermission === "denied"}
+                >
+                  {isPushLoading ? "Chwila…" : isSubscribed ? "Wyłącz" : "Włącz"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* CRON Trigger Box */}
-        <div className="cron-info-box">
-          <div className="cron-info-header">
-            <Clock size={20} className="cron-icon" />
-            <div>
-              <strong>Harmonogram CRON i wyzwalanie powiadomień</strong>
-              <p>
-                Wewnętrzny CRON weryfikuje grafik podlewania codziennie o <strong>8:00 rano</strong>.
-                Możesz również wywołać sprawdzanie ręcznie lub zintegrować zewnętrzny serwis (np. cron-job.org na Renderze).
-              </p>
+        <div className="settings-row">
+          <div className="settings-row-info">
+            <div className="settings-row-title">
+              <Clock size={18} />
+              <strong>Sprawdź zadania teraz</strong>
             </div>
+            <p>
+              Ręcznie uruchamia poranne sprawdzanie harmonogramu i wysyła powiadomienia o dzisiejszych zadaniach.
+            </p>
+            {cronFeedback && <p className="settings-feedback">{cronFeedback}</p>}
           </div>
-
-          <div className="cron-trigger-actions">
-            <button
-              type="button"
-              className="secondary compact"
-              onClick={handleTriggerCron}
-              disabled={isTriggeringCron}
-            >
-              <Radio size={16} />
-              {isTriggeringCron ? "Sprawdzanie..." : "Uruchom sprawdzanie powiadomień teraz"}
+          <div className="settings-row-action">
+            <button type="button" className="secondary" onClick={handleTriggerCron} disabled={isTriggeringCron}>
+              <Radio size={16} /> {isTriggeringCron ? "Sprawdzanie…" : "Uruchom"}
             </button>
-          </div>
-
-          {cronFeedback && (
-            <div className="warning-box" style={{ marginTop: "12px" }}>
-              {cronFeedback}
-            </div>
-          )}
-
-          <div className="cron-endpoint-help">
-            <small>
-              Endpoint do zewnętrznego wyzwalania (np. darmowy <strong>cron-job.org</strong>):
-              <code style={{ display: "inline-block", margin: "4px 6px", padding: "2px 6px", background: "#f0f4ec", borderRadius: "6px" }}>POST /api/cron/trigger-notifications</code>
-              z nagłówkiem <code style={{ display: "inline-block", margin: "4px 6px", padding: "2px 6px", background: "#f0f4ec", borderRadius: "6px" }}>x-cron-secret: greenly_cron_secret_2026</code>
-            </small>
           </div>
         </div>
       </section>
 
-      {/* 4. Account Settings: Email & Password */}
-      <div className="profile-grid">
-        {/* Email form */}
-        <section className="panel">
-          <div className="section-title">
-            <div>
-              <h2>Adres e-mail</h2>
-              <p>Zarządzaj swoim adresem powiązanym z kontem</p>
+      {/* Account */}
+      <section className="settings-section">
+        <header className="settings-section-header">
+          <h3>Konto</h3>
+          <p>Adres e-mail i hasło używane do logowania.</p>
+        </header>
+
+        <form onSubmit={handleUpdateEmail} className="settings-row settings-form-row">
+          <div className="settings-row-info">
+            <div className="settings-row-title">
+              <Mail size={18} />
+              <strong>Adres e-mail</strong>
             </div>
-            <Mail size={22} className="muted" />
+            {emailSuccess && <p className="settings-feedback success">{emailSuccess}</p>}
+            {emailError && <p className="settings-feedback error">{emailError}</p>}
           </div>
-
-          <form onSubmit={handleUpdateEmail} className="form">
-            {emailSuccess && <div className="pwa-success-box">{emailSuccess}</div>}
-            {emailError && <div className="error-box">{emailError}</div>}
-
+          <div className="settings-row-fields">
             <label>
-              Twój adres e-mail
+              <span className="sr-only">Adres e-mail</span>
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="twoj@email.com"
               />
             </label>
-
             <button
               type="submit"
               className="primary"
               disabled={isUpdatingEmail || emailInput.trim().toLowerCase() === user?.email?.toLowerCase()}
             >
-              {isUpdatingEmail ? "Zapisywanie..." : "Zapisz nowy e-mail"}
+              {isUpdatingEmail ? "Zapisywanie…" : "Zapisz"}
             </button>
-          </form>
-        </section>
-
-        {/* Password form */}
-        <section className="panel">
-          <div className="section-title">
-            <div>
-              <h2>Zmiana hasła</h2>
-              <p>Zabezpiecz swoje konto nowym silnym hasłem</p>
-            </div>
-            <KeyRound size={22} className="muted" />
           </div>
+        </form>
 
-          <form onSubmit={handleUpdatePassword} className="form">
-            {passwordSuccess && <div className="pwa-success-box">{passwordSuccess}</div>}
-            {passwordError && <div className="error-box">{passwordError}</div>}
-
+        <form onSubmit={handleUpdatePassword} className="settings-row settings-form-row">
+          <div className="settings-row-info">
+            <div className="settings-row-title">
+              <KeyRound size={18} />
+              <strong>Hasło</strong>
+            </div>
+            <p>Minimum 6 znaków.</p>
+            {passwordSuccess && <p className="settings-feedback success">{passwordSuccess}</p>}
+            {passwordError && <p className="settings-feedback error">{passwordError}</p>}
+          </div>
+          <div className="settings-row-fields stacked">
             <label>
               Obecne hasło
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Wpisz obecne hasło"
               />
             </label>
-
             <label>
-              Nowe hasło (min. 6 znaków)
+              Nowe hasło
               <input
                 type="password"
                 required
                 minLength={6}
+                autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Wpisz nowe hasło"
               />
             </label>
-
             <label>
               Powtórz nowe hasło
               <input
                 type="password"
                 required
                 minLength={6}
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Powtórz nowe hasło"
               />
             </label>
-
             <button type="submit" className="primary" disabled={isUpdatingPassword}>
-              {isUpdatingPassword ? "Aktualizacja..." : "Zmień hasło"}
+              {isUpdatingPassword ? "Aktualizacja…" : "Zmień hasło"}
             </button>
-          </form>
-        </section>
-      </div>
-
-      {/* 4. Danger Zone: Delete Account */}
-      <section className="danger-zone-panel panel">
-        <div className="danger-zone-header">
-          <div className="danger-zone-icon">
-            <ShieldAlert size={28} />
           </div>
-          <div>
-            <h2>Usuwanie konta</h2>
-            <p>
-              Po usunięciu konta wszystkie Twoje dane (strefy mikroklimatyczne, rośliny, harmonogramy i zdjęcia)
-              zostaną bezpowrotnie skasowane z bazy danych. Ta operacja jest nieodwracalna.
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="danger-button"
-          onClick={() => {
-            setDeleteError("");
-            setDeleteConfirmPassword("");
-            setIsDeleteModalOpen(true);
-          }}
-        >
-          <Trash2 size={18} />
-          Usuń konto trwale
-        </button>
+        </form>
       </section>
 
-      {/* Confirmation Modal for account deletion */}
+      {/* Danger zone */}
+      <section className="settings-section danger">
+        <div className="settings-row">
+          <div className="settings-row-info">
+            <div className="settings-row-title">
+              <ShieldAlert size={18} />
+              <strong>Usuń konto</strong>
+            </div>
+            <p>
+              Trwale usuwa konto razem z mikroklimatami, roślinami, harmonogramami i zdjęciami. Tej operacji nie można
+              cofnąć.
+            </p>
+          </div>
+          <div className="settings-row-action">
+            <button
+              type="button"
+              className="danger-button"
+              onClick={() => {
+                setDeleteError("");
+                setDeleteConfirmPassword("");
+                setIsDeleteModalOpen(true);
+              }}
+            >
+              <Trash2 size={16} /> Usuń konto
+            </button>
+          </div>
+        </div>
+      </section>
+
       {isDeleteModalOpen && (
         <div className="modal-backdrop" onClick={() => setIsDeleteModalOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-icon danger">
-              <AlertTriangle size={32} />
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-heading">
+              <AlertTriangle size={20} className="danger-text" />
+              <h3 id="delete-account-title">Usunąć konto?</h3>
             </div>
-            <h3>Czy na pewno chcesz usunąć konto?</h3>
             <p className="modal-description">
-              Wszystkie Twoje strefy ({stats.microclimatesCount}) oraz rośliny ({stats.plantsCount}) zostaną natychmiast
-              skasowane. Tej operacji nie można cofnąć.
+              Zostanie usuniętych {stats.microclimatesCount} mikroklimatów i {stats.plantsCount} roślin. Wpisz hasło, aby
+              potwierdzić.
             </p>
 
             <form onSubmit={handleDeleteAccount} className="form">
               {deleteError && <div className="error-box">{deleteError}</div>}
-
               <label>
-                Potwierdź wpisując swoje hasło:
+                Hasło
                 <input
                   type="password"
                   required
-                  placeholder="Twoje obecne hasło"
+                  autoComplete="current-password"
                   value={deleteConfirmPassword}
                   onChange={(e) => setDeleteConfirmPassword(e.target.value)}
                   autoFocus
                 />
               </label>
-
               <div className="modal-actions">
                 <button
                   type="button"
@@ -649,7 +528,7 @@ export default function Profile() {
                   Anuluj
                 </button>
                 <button type="submit" className="danger-button solid" disabled={isDeletingAccount}>
-                  {isDeletingAccount ? "Usuwanie..." : "Tak, usuń bezpowrotnie"}
+                  {isDeletingAccount ? "Usuwanie…" : "Usuń na zawsze"}
                 </button>
               </div>
             </form>
