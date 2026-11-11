@@ -3,12 +3,17 @@ import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowRight,
+  Bell,
+  BellRing,
   Check,
   CheckCircle,
+  Clock,
   Download,
   KeyRound,
   Leaf,
   Mail,
+  Radio,
+  Send,
   ShieldAlert,
   Smartphone,
   Sprout,
@@ -23,7 +28,20 @@ import { formatDate } from "../utils/format";
 
 export default function Profile() {
   const { user, updateUser, logout } = useAuth();
-  const { isInstallable, isInstalled, isStandalone, isIos, installApp } = usePwa();
+  const {
+    isInstallable,
+    isInstalled,
+    isStandalone,
+    isIos,
+    installApp,
+    isPushSupported,
+    isSubscribed,
+    isPushLoading,
+    pushPermission,
+    subscribeToPush,
+    unsubscribeFromPush,
+    sendTestPushNotification,
+  } = usePwa();
   const navigate = useNavigate();
 
   // Stats
@@ -52,6 +70,12 @@ export default function Profile() {
 
   // PWA install trigger feedback
   const [installFeedback, setInstallFeedback] = useState("");
+
+  // Push Notifications state
+  const [pushMessage, setPushMessage] = useState("");
+  const [pushError, setPushError] = useState("");
+  const [isTriggeringCron, setIsTriggeringCron] = useState(false);
+  const [cronFeedback, setCronFeedback] = useState("");
 
   useEffect(() => {
     if (user?.email) {
@@ -177,6 +201,46 @@ export default function Profile() {
       setInstallFeedback(
         "Instalacja jest gotowa! Jeśli przycisk nie wywołał monitu, użyj menu przeglądarki (ikona instalacji w pasku adresu na komputerze lub 'Dodaj do ekranu głównego' w menu mobilnym)."
       );
+    }
+  };
+
+  const handleTogglePush = async () => {
+    setPushMessage("");
+    setPushError("");
+    try {
+      if (isSubscribed) {
+        await unsubscribeFromPush();
+        setPushMessage("Powiadomienia Push zostały pomyślnie wyłączone na tym urządzeniu.");
+      } else {
+        await subscribeToPush();
+        setPushMessage("Powiadomienia Push zostały pomyślnie włączone! Otrzymasz przypomnienia o podlewaniu.");
+      }
+    } catch (err) {
+      setPushError(err.message || "Błąd podczas zarządzania powiadomieniami");
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setPushMessage("");
+    setPushError("");
+    try {
+      const res = await sendTestPushNotification();
+      setPushMessage(res.message || "Wysłano powiadomienie testowe! Powinno pojawić się na Twoim ekranie.");
+    } catch (err) {
+      setPushError(err.message || "Nie udało się wysłać testowego powiadomienia");
+    }
+  };
+
+  const handleTriggerCron = async () => {
+    setIsTriggeringCron(true);
+    setCronFeedback("");
+    try {
+      const res = await api.triggerNotificationsCron();
+      setCronFeedback(res.message || "Pomyślnie sprawdzono zadania i wysłano powiadomienia.");
+    } catch (err) {
+      setCronFeedback(err.message || "Błąd podczas wyzwalania harmonogramu CRON");
+    } finally {
+      setIsTriggeringCron(false);
     }
   };
 
@@ -325,7 +389,107 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* 3. Account Settings: Email & Password */}
+      {/* 3. Push Notifications & CRON Section */}
+      <section className="pwa-card panel push-notification-card">
+        <div className="pwa-header">
+          <div className="pwa-icon-badge push-badge">
+            <BellRing size={28} />
+          </div>
+          <div>
+            <div className="pwa-title-row">
+              <h2>Powiadomienia Web Push i CRON</h2>
+              {!isPushSupported ? (
+                <span className="status-pill danger">Brak wsparcia w tej przeglądarce</span>
+              ) : isSubscribed ? (
+                <span className="status-pill success">
+                  <CheckCircle size={14} /> Włączone (aktywne)
+                </span>
+              ) : (
+                <span className="status-pill neutral">Wyłączone</span>
+              )}
+            </div>
+            <p className="pwa-description">
+              Otrzymuj powiadomienia o podlewaniu i pielęgnacji roślin bezpośrednio na swój telefon lub komputer, nawet
+              gdy aplikacja jest zamknięta.
+            </p>
+          </div>
+        </div>
+
+        {pushMessage && <div className="pwa-success-box" style={{ marginBottom: "16px" }}>{pushMessage}</div>}
+        {pushError && <div className="error-box" style={{ marginBottom: "16px" }}>{pushError}</div>}
+
+        <div className="push-actions-row">
+          {isPushSupported && (
+            <button
+              type="button"
+              className={isSubscribed ? "secondary" : "primary"}
+              onClick={handleTogglePush}
+              disabled={isPushLoading}
+            >
+              <Bell size={18} />
+              {isPushLoading
+                ? "Przetwarzanie..."
+                : isSubscribed
+                ? "Wyłącz powiadomienia na tym urządzeniu"
+                : "Włącz powiadomienia na tym urządzeniu"}
+            </button>
+          )}
+
+          {isSubscribed && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={handleSendTestPush}
+              title="Wyślij testowe powiadomienie Push do tego urządzenia"
+            >
+              <Send size={18} />
+              Wyślij powiadomienie testowe
+            </button>
+          )}
+        </div>
+
+        {/* CRON Trigger Box */}
+        <div className="cron-info-box">
+          <div className="cron-info-header">
+            <Clock size={20} className="cron-icon" />
+            <div>
+              <strong>Harmonogram CRON i wyzwalanie powiadomień</strong>
+              <p>
+                Wewnętrzny CRON weryfikuje grafik podlewania codziennie o <strong>8:00 rano</strong>.
+                Możesz również wywołać sprawdzanie ręcznie lub zintegrować zewnętrzny serwis (np. cron-job.org na Renderze).
+              </p>
+            </div>
+          </div>
+
+          <div className="cron-trigger-actions">
+            <button
+              type="button"
+              className="secondary compact"
+              onClick={handleTriggerCron}
+              disabled={isTriggeringCron}
+            >
+              <Radio size={16} />
+              {isTriggeringCron ? "Sprawdzanie..." : "Uruchom sprawdzanie powiadomień teraz"}
+            </button>
+          </div>
+
+          {cronFeedback && (
+            <div className="warning-box" style={{ marginTop: "12px" }}>
+              {cronFeedback}
+            </div>
+          )}
+
+          <div className="cron-endpoint-help">
+            <small>
+              Endpoint do zewnętrznego wyzwalania (np. darmowy <strong>cron-job.org</strong>):
+              <code style={{ display: "inline-block", margin: "4px 6px", padding: "2px 6px", background: "#f0f4ec", borderRadius: "6px" }}>POST /api/cron/trigger-notifications</code>
+              z nagłówkiem <code style={{ display: "inline-block", margin: "4px 6px", padding: "2px 6px", background: "#f0f4ec", borderRadius: "6px" }}>x-cron-secret: greenly_cron_secret_2026</code>
+            </small>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Account Settings: Email & Password */}
       <div className="profile-grid">
         {/* Email form */}
         <section className="panel">

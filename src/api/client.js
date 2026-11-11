@@ -182,4 +182,24 @@ export const api = {
     }),
   getWateringDemo: () => apiFetch("/weather/optimization-demo"),
   getOptimizationHistory: (before, signal) => apiFetch(`/weather/optimization-history${before ? `?before=${encodeURIComponent(before)}` : ""}`, { signal }),
+  getVapidPublicKey: () => apiFetch("/notifications/vapid-public-key"),
+  subscribePush: (subscription) =>
+    apiFetch("/notifications/subscribe", {
+      method: "POST",
+      body: JSON.stringify({ subscription }),
+    }),
+  unsubscribePush: (endpoint) =>
+    apiFetch("/notifications/unsubscribe", {
+      method: "POST",
+      body: JSON.stringify({ endpoint }),
+    }),
+  sendTestPush: () =>
+    apiFetch("/notifications/test", {
+      method: "POST",
+    }),
+  triggerNotificationsCron: (secret) =>
+    apiFetch("/cron/trigger-notifications", {
+      method: "POST",
+      headers: secret ? { "x-cron-secret": secret } : {},
+    }),
 };

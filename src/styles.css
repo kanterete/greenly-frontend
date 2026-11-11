@@ -1352,3 +1352,66 @@ textarea:focus {
     align-items: flex-start;
   }
 }
+
+/* Push Notifications & CRON Styles */
+.push-badge {
+  background: linear-gradient(135deg, #2d7d46, #1f5f35);
+  box-shadow: 0 10px 24px rgba(45, 125, 70, 0.28);
+}
+
+.push-actions-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.cron-info-box {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  display: grid;
+  gap: 16px;
+  box-shadow: 0 4px 14px rgba(27, 59, 36, 0.04);
+}
+
+.cron-info-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.cron-icon {
+  color: var(--green);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cron-info-header strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.cron-info-header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cron-trigger-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.cron-endpoint-help {
+  font-size: 13px;
+  color: var(--muted);
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  line-height: 1.6;
+}
