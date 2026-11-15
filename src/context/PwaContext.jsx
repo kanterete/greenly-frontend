@@ -53,9 +53,10 @@ export function PwaProvider({ children }) {
       });
     }
 
-    // Register Service Worker
+    // Register Service Worker reliably (even if window 'load' event has already fired)
+    let onLoadHandler = null;
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
+      const registerSw = () => {
         navigator.serviceWorker
           .register("/sw.js")
           .then((registration) => {
@@ -64,7 +65,14 @@ export function PwaProvider({ children }) {
           .catch((error) => {
             console.warn("[PWA] Rejestracja Service Workera nie powiodła się:", error);
           });
-      });
+      };
+
+      if (document.readyState === "complete") {
+        registerSw();
+      } else {
+        onLoadHandler = registerSw;
+        window.addEventListener("load", onLoadHandler);
+      }
     }
 
     // Catch the install prompt event
@@ -85,6 +93,9 @@ export function PwaProvider({ children }) {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
+      if (onLoadHandler) {
+        window.removeEventListener("load", onLoadHandler);
+      }
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
@@ -112,6 +123,11 @@ export function PwaProvider({ children }) {
 
   const subscribeToPush = async () => {
     if (!isPushSupported) {
+      if (isIos && !isStandalone) {
+        throw new Error(
+          "Na iPhone/iPad powiadomienia Push działają dopiero po dodaniu aplikacji do ekranu głównego (Udostępnij → Do ekranu początkowego) i otwarciu jej z ikony."
+        );
+      }
       throw new Error("Powiadomienia Push nie są wspierane w Twojej przeglądarce.");
     }
 
@@ -120,6 +136,12 @@ export function PwaProvider({ children }) {
       const permission = await Notification.requestPermission();
       setPushPermission(permission);
 
+      if (permission === "denied") {
+        throw new Error(
+          "Powiadomienia zostały zablokowane w ustawieniach przeglądarki. Odblokuj je w ustawieniach witryny (ikona kłódki obok adresu)."
+        );
+      }
+
       if (permission !== "granted") {
         throw new Error("Nie wyrażono zgody na odbieranie powiadomień w przeglądarce.");
       }
@@ -127,6 +149,11 @@ export function PwaProvider({ children }) {
       const { publicKey } = await api.getVapidPublicKey();
       if (!publicKey) {
         throw new Error("Brak klucza publicznego VAPID z serwera.");
+      }
+
+      const existingReg = await navigator.serviceWorker.getRegistration();
+      if (!existingReg) {
+        await navigator.serviceWorker.register("/sw.js");
       }
 
       const reg = await navigator.serviceWorker.ready;
