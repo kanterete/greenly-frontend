@@ -4,6 +4,16 @@ import { urlBase64ToUint8Array } from "../utils/push";
 
 const PwaContext = createContext(null);
 
+function withTimeout(promise, ms, message) {
+  let timerId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timerId = setTimeout(() => reject(new Error(message)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timerId);
+  });
+}
+
 export function PwaProvider({ children }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -146,7 +156,11 @@ export function PwaProvider({ children }) {
         throw new Error("Nie wyrażono zgody na odbieranie powiadomień w przeglądarce.");
       }
 
-      const { publicKey } = await api.getVapidPublicKey();
+      const { publicKey } = await withTimeout(
+        api.getVapidPublicKey(),
+        25000,
+        "Serwer nie odpowiedział na czas (może się wybudzać na Renderze). Spróbuj ponownie za chwilę."
+      );
       if (!publicKey) {
         throw new Error("Brak klucza publicznego VAPID z serwera.");
       }
@@ -156,18 +170,30 @@ export function PwaProvider({ children }) {
         await navigator.serviceWorker.register("/sw.js");
       }
 
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await withTimeout(
+        navigator.serviceWorker.ready,
+        12000,
+        "Service Worker nie uruchomił się na czas. Zamknij i uruchom ponownie aplikację."
+      );
       const convertedVapidKey = urlBase64ToUint8Array(publicKey);
 
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedVapidKey,
-        });
+        sub = await withTimeout(
+          reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey,
+          }),
+          15000,
+          "Przeglądarka nie odpowiedziała podczas rejestracji powiadomień Push (sprawdź ustawienia przeglądarki lub połączenie z usługą Push)."
+        );
       }
 
-      await api.subscribePush(sub.toJSON());
+      await withTimeout(
+        api.subscribePush(sub.toJSON()),
+        20000,
+        "Nie udało się zapisać subskrypcji na serwerze (przekroczono czas oczekiwania)."
+      );
       setIsSubscribed(true);
       return true;
     } finally {

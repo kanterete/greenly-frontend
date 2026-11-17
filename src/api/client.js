@@ -202,4 +202,13 @@ export const api = {
       method: "POST",
       headers: secret ? { "x-cron-secret": secret } : {},
     }),
+  getNotifications: (limit = 30) => apiFetch(`/notifications?limit=${limit}`),
+  markNotificationRead: (id) =>
+    apiFetch(`/notifications/${id}/read`, {
+      method: "PATCH",
+    }),
+  markAllNotificationsRead: () =>
+    apiFetch("/notifications/read-all", {
+      method: "PATCH",
+    }),
 };

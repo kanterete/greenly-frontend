@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, CalendarDays, Home, Leaf, LogOut, Plus, Settings, Sprout, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import NotificationBell from "./NotificationBell";
 
 const links = [
   { to: "/", label: "Pulpit", short: "Pulpit", icon: Home },
@@ -77,6 +78,7 @@ export default function AppLayout() {
             <h1>{title}</h1>
           </div>
           <div className="topbar-actions">
+            <NotificationBell />
             <button className="primary compact" onClick={() => navigate("/plants/add")} aria-label="Dodaj roślinę">
               <Plus size={18} /> <span className="btn-label">Dodaj roślinę</span>
             </button>
