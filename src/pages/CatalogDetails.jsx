@@ -2,6 +2,7 @@ import { Link, useLocation, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Droplet, Plus, Sun, Waves } from "lucide-react";
 import { useCatalogPlant } from "../hooks/useCatalog";
 import Loading from "../components/Loading";
+import PlantImage from "../components/PlantImage";
 
 export default function CatalogDetails() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ export default function CatalogDetails() {
 
   return (
     <section className="details-page">
-      <div className="details-image">{plant.imageUrl ? <img src={plant.imageUrl} alt={plant.commonName} /> : <div className="image-placeholder">Brak zdjęcia</div>}</div>
+      <div className="details-image"><PlantImage src={plant.imageUrl} alt={plant.commonName} iconSize={40} /></div>
       <div className="details-content">
         <p className="eyebrow">Katalog roślin</p>
         <Link className="secondary catalog-back-button" to={state?.catalogSearch || (selecting ? "/catalog?select=1" : "/catalog")} state={state}><ArrowLeft size={18} /> Wróć do katalogu</Link>

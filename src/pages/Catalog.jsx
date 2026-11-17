@@ -2,6 +2,7 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Search, Droplet, Sun } from "lucide-react";
 import { useCatalog } from "../hooks/useCatalog";
 import Loading from "../components/Loading";
+import PlantImage from "../components/PlantImage";
 
 export default function Catalog() {
   const [params, setParams] = useSearchParams();
@@ -53,7 +54,7 @@ export default function Catalog() {
         {plants.map((plant) => (
           <article className="catalog-card" key={plant.id}>
             <Link to={`/catalog/${plant.id}${selecting ? "?select=1" : ""}`} state={catalogState}>
-            {plant.imageUrl ? <img src={plant.imageUrl} alt={plant.commonName} loading="lazy" /> : <div className="image-placeholder">Brak zdjęcia</div>}
+            <PlantImage src={plant.imageUrl} alt={plant.commonName} loading="lazy" />
             <div>
               <h3>{plant.commonName}</h3>
               <p>{plant.name}</p>

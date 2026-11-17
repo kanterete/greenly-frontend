@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Droplet, Edit, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import Loading from "../components/Loading";
+import PlantImage from "../components/PlantImage";
 import {
   formatDate,
   formatDateTime,
@@ -123,9 +124,13 @@ export default function PlantDetails() {
         <Link className="back-link" to="/garden">
           <ArrowLeft size={17} /> Wróć do ogrodu
         </Link>
-        {image && (
-          <img className="details-cover" src={image} alt={plant.nickname} />
-        )}
+        <PlantImage
+          src={image}
+          alt={plant.nickname}
+          className="details-cover"
+          placeholderClassName="details-cover"
+          iconSize={40}
+        />
         <div className="details-header">
           <div>
             <span className={`status-pill ${status.className}`}>

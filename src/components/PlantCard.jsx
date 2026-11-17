@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { CalendarDays, Droplet, MapPin } from "lucide-react";
+import { CalendarDays, MapPin } from "lucide-react";
 import { formatDate, getNextWatering, wateringStatus } from "../utils/format";
+import PlantImage from "./PlantImage";
 
 export default function PlantCard({ plant }) {
   const image = plant.images?.[0]?.imageUrl;
@@ -9,7 +10,7 @@ export default function PlantCard({ plant }) {
   return (
     <Link to={`/plants/${plant.id}`} className="plant-card">
       <div className="plant-image-wrap">
-        {image ? <img src={image} alt={plant.nickname} /> : <div className="image-placeholder"><Droplet /></div>}
+        <PlantImage src={image} alt={plant.nickname} />
         <span className={`status-pill ${status.className}`}>{status.label}</span>
       </div>
       <div className="plant-card-body">
