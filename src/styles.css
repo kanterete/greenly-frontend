@@ -2027,7 +2027,7 @@ input[type="file"] {
   top: calc(100% + 8px);
   right: 0;
   width: min(360px, calc(100vw - 24px));
-  max-height: 420px;
+  max-height: min(70vh, 420px);
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -2036,6 +2036,17 @@ input[type="file"] {
   box-shadow: 0 12px 32px rgba(23, 35, 27, 0.14);
   z-index: 60;
   overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .notification-dropdown {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: min(72vh, 440px);
+  }
 }
 
 .notification-dropdown-header {
