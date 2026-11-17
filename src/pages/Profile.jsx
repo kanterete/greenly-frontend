@@ -79,8 +79,6 @@ export default function Profile() {
   // Push Notifications state
   const [pushMessage, setPushMessage] = useState("");
   const [pushError, setPushError] = useState("");
-  const [isTriggeringCron, setIsTriggeringCron] = useState(false);
-  const [cronFeedback, setCronFeedback] = useState("");
 
   useEffect(() => {
     if (user?.email) {
@@ -216,19 +214,6 @@ export default function Profile() {
     }
   };
 
-  const handleTriggerCron = async () => {
-    setIsTriggeringCron(true);
-    setCronFeedback("");
-    try {
-      const res = await api.triggerNotificationsCron();
-      setCronFeedback(res.message || "Pomyślnie sprawdzono zadania i wysłano powiadomienia.");
-    } catch (err) {
-      setCronFeedback(err.message || "Błąd podczas wyzwalania harmonogramu CRON");
-    } finally {
-      setIsTriggeringCron(false);
-    }
-  };
-
   const initial = user?.email?.[0]?.toUpperCase() || "?";
   const pushStatus = !isPushSupported
     ? { label: "Niedostępne", tone: "neutral" }
@@ -334,24 +319,6 @@ export default function Profile() {
                 </button>
               </>
             )}
-          </div>
-        </div>
-
-        <div className="settings-row">
-          <div className="settings-row-info">
-            <div className="settings-row-title">
-              <Clock size={18} />
-              <strong>Sprawdź zadania teraz</strong>
-            </div>
-            <p>
-              Ręcznie uruchamia poranne sprawdzanie harmonogramu i wysyła powiadomienia o dzisiejszych zadaniach.
-            </p>
-            {cronFeedback && <p className="settings-feedback">{cronFeedback}</p>}
-          </div>
-          <div className="settings-row-action">
-            <button type="button" className="secondary" onClick={handleTriggerCron} disabled={isTriggeringCron}>
-              <Radio size={16} /> {isTriggeringCron ? "Sprawdzanie…" : "Uruchom"}
-            </button>
           </div>
         </div>
       </section>

@@ -6,6 +6,13 @@ import Loading from "../components/Loading";
 import WeatherSummary from "../components/WeatherSummary";
 import { useCachedQuery } from "../hooks/useCachedQuery";
 
+const lightLabels = {
+  low: "Niskie (cień)",
+  medium: "Średnie (rozproszone)",
+  bright_indirect: "Jasne, pośrednie",
+  direct_sun: "Bezpośrednie słońce",
+};
+
 export default function Microclimates() {
   const { data, loading, error, setError, refresh } = useCachedQuery("microclimates", api.getMicroclimates);
   const items = data?.microclimates || [];
@@ -41,7 +48,7 @@ export default function Microclimates() {
               {item.environmentType?.toLowerCase() === "outdoor" ? <WeatherSummary location={item.location} /> : <div className="micro-data">
                 <span>Temp. {item.temperature ?? "-"}°C</span>
                 <span>Wilg. {item.humidity ?? "-"}%</span>
-                <span>Światło: {item.lightLevel || "-"}</span>
+                <span>Światło: {lightLabels[item.lightLevel] || item.lightLevel || "-"}</span>
               </div>}
               <Link className="secondary" to={`/microclimates/${item.id}/edit`}><Edit size={16} /> Edytuj mikroklimat</Link>
               <button className="ghost danger-text" onClick={() => remove(item.id)}><Trash2 size={16} /> Usuń</button>

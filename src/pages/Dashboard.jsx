@@ -4,7 +4,6 @@ import { CalendarCheck, Droplet, Leaf, Plus, Sprout } from "lucide-react";
 import { api } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import Loading from "../components/Loading";
-import WateringRecalculation from "../components/WateringRecalculation";
 import PlantCard from "../components/PlantCard";
 import { useCachedQuery } from "../hooks/useCachedQuery";
 import { daysUntil, getNextWatering } from "../utils/format";
@@ -14,7 +13,6 @@ export default function Dashboard() {
     data: plantsData,
     loading: loadingPlants,
     error: plantsError,
-    refresh: refreshPlants,
   } = useCachedQuery("plants", api.getPlants);
   const {
     data: microData,
@@ -70,10 +68,6 @@ export default function Dashboard() {
         ) : (
           <div className="cards-grid three">{nextPlants.map((plant) => <PlantCard key={plant.id} plant={plant} />)}</div>
         )}
-      </section>
-
-      <section className="panel full-row">
-        <WateringRecalculation onUpdated={refreshPlants} />
       </section>
     </div>
   );

@@ -90,11 +90,13 @@ export default function AddMicroclimate() {
               <option value="Outdoor">Outdoor</option>
             </select>
           </label>
-          <label>Źródło pogody
-            <input value={form.environmentType === "Outdoor" ? "Open-Meteo" : "Warunki ręczne"} readOnly />
-          </label>
+          {form.environmentType !== "Outdoor" && (
+            <label>Źródło pogody
+              <input value="Warunki ręczne" readOnly />
+            </label>
+          )}
           <label>Lokalizacja
-            <input name="location" value={form.location} onChange={update} placeholder="np. Warszawa lub 52.23, 21.01" required={form.environmentType === "Outdoor"} />
+            <input name="location" value={form.location} onChange={update} placeholder="np. Warszawa lub 52.23, 21.01" required />
           </label>
           {form.environmentType === "Indoor" && <><label>Temperatura
             <input name="temperature" type="number" min="-50" max="60" step="0.1" value={form.temperature} onChange={update} />
@@ -105,10 +107,10 @@ export default function AddMicroclimate() {
           </>}
           <label className="full-field">Poziom światła
             <select name="lightLevel" value={form.lightLevel} onChange={update}>
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="bright_indirect">bright_indirect</option>
-              <option value="direct_sun">direct_sun</option>
+              <option value="low">Niskie (cień)</option>
+              <option value="medium">Średnie (rozproszone)</option>
+              <option value="bright_indirect">Jasne, pośrednie</option>
+              <option value="direct_sun">Bezpośrednie słońce</option>
             </select>
           </label>
           {error && <div className="error-box full-field">{error}</div>}
