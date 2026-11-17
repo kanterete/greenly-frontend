@@ -24,6 +24,7 @@ import {
 import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { usePwa } from "../context/PwaContext";
+import { useCachedQuery } from "../hooks/useCachedQuery";
 import { formatDate } from "../utils/format";
 
 export default function Profile() {
@@ -43,9 +44,14 @@ export default function Profile() {
   } = usePwa();
   const navigate = useNavigate();
 
-  // Stats
-  const [stats, setStats] = useState({ plantsCount: 0, microclimatesCount: 0 });
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  // Stats (cached across tabs)
+  const { data: plantsData, loading: loadingPlants } = useCachedQuery("plants", api.getPlants);
+  const { data: microData, loading: loadingMicro } = useCachedQuery("microclimates", api.getMicroclimates);
+  const stats = {
+    plantsCount: (plantsData?.plants || []).length,
+    microclimatesCount: (microData?.microclimates || []).length,
+  };
+  const isLoadingStats = loadingPlants || loadingMicro;
 
   // Email update state
   const [emailInput, setEmailInput] = useState(user?.email || "");
@@ -81,26 +87,6 @@ export default function Profile() {
       setEmailInput(user.email);
     }
   }, [user]);
-
-  useEffect(() => {
-    let isMounted = true;
-    Promise.all([api.getPlants().catch(() => []), api.getMicroclimates().catch(() => [])])
-      .then(([plants, microclimates]) => {
-        if (isMounted) {
-          setStats({
-            plantsCount: (Array.isArray(plants) ? plants : plants?.plants || []).length,
-            microclimatesCount: (Array.isArray(microclimates) ? microclimates : microclimates?.microclimates || []).length,
-          });
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingStats(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const handleUpdateEmail = async (e) => {
     e.preventDefault();

@@ -1,30 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, RefreshCw, Search } from "lucide-react";
 import { api } from "../api/client";
 import WateringRecalculation from "../components/WateringRecalculation";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
+import { useCachedQuery } from "../hooks/useCachedQuery";
 import { daysUntil, formatDate } from "../utils/format";
 
 export default function Schedules() {
-  const [plants, setPlants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
+  const { data, loading, error, refresh } = useCachedQuery("plants", api.getPlants);
+  const plants = data?.plants || [];
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError("");
-    api.getPlants()
-      .then((data) => { if (active) setPlants(data.plants || []); })
-      .catch((err) => { if (active) setError(err.message); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [attempt]);
 
   const schedules = plants.flatMap((plant) => (plant.schedules || [])
     .filter((schedule) => schedule.active)
@@ -46,12 +34,10 @@ export default function Schedules() {
   return <section className="panel full-page-panel">
     <div className="section-title schedules-heading">
       <div><h2>Harmonogramy</h2><p>Najbliższy termin każdej aktywnej czynności, od najpilniejszych.</p></div>
-      <button className="secondary" onClick={() => setAttempt((value) => value + 1)} disabled={loading}><RefreshCw size={18} /> Odśwież</button>
+      <button className="secondary" onClick={() => refresh().catch(() => {})} disabled={loading}><RefreshCw size={18} /> Odśwież</button>
     </div>
     <WateringRecalculation onUpdated={async () => {
-      const data = await api.getPlants();
-      setPlants(data.plants || []);
-      setError("");
+      await refresh();
     }} />
     {loading ? <Loading /> : error ? <div className="error-box" role="alert">{error}</div> : schedules.length === 0 ? (
       <EmptyState title="Brak aktywnych harmonogramów" description="Dodaj roślinę i ustaw częstotliwość podlewania, aby zobaczyć tutaj jej terminy." action={<Link className="primary" to="/plants/add">Dodaj roślinę</Link>} />

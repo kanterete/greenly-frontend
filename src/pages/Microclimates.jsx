@@ -1,33 +1,20 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Edit, Home, Plus, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import Loading from "../components/Loading";
 import WeatherSummary from "../components/WeatherSummary";
+import { useCachedQuery } from "../hooks/useCachedQuery";
 
 export default function Microclimates() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const load = () => {
-    setLoading(true);
-    api.getMicroclimates()
-      .then((data) => setItems(data.microclimates || []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
+  const { data, loading, error, setError, refresh } = useCachedQuery("microclimates", api.getMicroclimates);
+  const items = data?.microclimates || [];
 
   const remove = async (id) => {
     if (!confirm("Usunąć mikroklimat wraz z przypisanymi roślinami i ich historią? Tej operacji nie można cofnąć.")) return;
     try {
       await api.deleteMicroclimate(id);
-      load();
+      await refresh();
     } catch (err) {
       setError(err.message);
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CalendarCheck, Droplet, Leaf, Plus, Sprout } from "lucide-react";
 import { api } from "../api/client";
@@ -6,31 +6,26 @@ import EmptyState from "../components/EmptyState";
 import Loading from "../components/Loading";
 import WateringRecalculation from "../components/WateringRecalculation";
 import PlantCard from "../components/PlantCard";
+import { useCachedQuery } from "../hooks/useCachedQuery";
 import { daysUntil, getNextWatering } from "../utils/format";
 
 export default function Dashboard() {
-  const [plants, setPlants] = useState([]);
-  const [microclimates, setMicroclimates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    data: plantsData,
+    loading: loadingPlants,
+    error: plantsError,
+    refresh: refreshPlants,
+  } = useCachedQuery("plants", api.getPlants);
+  const {
+    data: microData,
+    loading: loadingMicro,
+    error: microError,
+  } = useCachedQuery("microclimates", api.getMicroclimates);
 
-  const load = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [plantsData, microData] = await Promise.all([api.getPlants(), api.getMicroclimates()]);
-      setPlants(plantsData.plants || []);
-      setMicroclimates(microData.microclimates || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
+  const plants = plantsData?.plants || [];
+  const microclimates = microData?.microclimates || [];
+  const loading = loadingPlants || loadingMicro;
+  const error = plantsError || microError;
 
   const dueToday = useMemo(
     () => plants.filter((plant) => daysUntil(getNextWatering(plant)) !== null && daysUntil(getNextWatering(plant)) <= 0),
@@ -38,11 +33,6 @@ export default function Dashboard() {
   );
 
   const nextPlants = useMemo(() => [...plants].sort((a, b) => new Date(getNextWatering(a) || 0) - new Date(getNextWatering(b) || 0)).slice(0, 3), [plants]);
-
-  const refreshPlants = async () => {
-    const data = await api.getPlants();
-    setPlants(data.plants || []);
-  };
 
   if (loading) return <Loading />;
 

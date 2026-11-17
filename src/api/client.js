@@ -1,3 +1,5 @@
+import { clearQueryCache, invalidateQueryCache } from "../utils/queryCache";
+
 function resolveApiUrl() {
   let envUrl = (import.meta.env.VITE_API_URL || "").trim();
   if (!envUrl) {
@@ -29,7 +31,10 @@ if (import.meta.env.PROD && API_URL.includes("localhost")) {
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const saveToken = (token) => localStorage.setItem(TOKEN_KEY, token);
-export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
+export const removeToken = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  clearQueryCache();
+};
 
 export async function apiFetch(endpoint, options = {}) {
   const token = getToken();
@@ -139,47 +144,71 @@ export const api = {
     }),
   getMicroclimates: () => apiFetch("/microclimates"),
   getMicroclimate: (id) => apiFetch(`/microclimates/${id}`),
-  createMicroclimate: (payload) =>
-    apiFetch("/microclimates", {
+  createMicroclimate: async (payload) => {
+    const res = await apiFetch("/microclimates", {
       method: "POST",
       body: JSON.stringify(payload),
-    }),
-  updateMicroclimate: (id, payload) =>
-    apiFetch(`/microclimates/${id}`, {
+    });
+    invalidateQueryCache("microclimates", "plants");
+    return res;
+  },
+  updateMicroclimate: async (id, payload) => {
+    const res = await apiFetch(`/microclimates/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
-    }),
-  deleteMicroclimate: (id) =>
-    apiFetch(`/microclimates/${id}`, {
+    });
+    invalidateQueryCache("microclimates", "plants");
+    return res;
+  },
+  deleteMicroclimate: async (id) => {
+    const res = await apiFetch(`/microclimates/${id}`, {
       method: "DELETE",
-    }),
+    });
+    invalidateQueryCache("microclimates", "plants");
+    return res;
+  },
   getPlants: () => apiFetch("/plants"),
   getPlant: (id) => apiFetch(`/plants/${id}`),
-  createPlant: (payload) =>
-    apiFetch("/plants", {
+  createPlant: async (payload) => {
+    const res = await apiFetch("/plants", {
       method: "POST",
       body: JSON.stringify(payload),
-    }),
-  updatePlant: (id, payload) =>
-    apiFetch(`/plants/${id}`, {
+    });
+    invalidateQueryCache("plants");
+    return res;
+  },
+  updatePlant: async (id, payload) => {
+    const res = await apiFetch(`/plants/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
-    }),
-  deletePlant: (id) =>
-    apiFetch(`/plants/${id}`, {
+    });
+    invalidateQueryCache("plants");
+    return res;
+  },
+  deletePlant: async (id) => {
+    const res = await apiFetch(`/plants/${id}`, {
       method: "DELETE",
-    }),
+    });
+    invalidateQueryCache("plants");
+    return res;
+  },
   getTaskTypes: () => apiFetch("/care/task-types"),
-  logCareAction: (plantId, payload) =>
-    apiFetch(`/plants/${plantId}/care-actions`, {
+  logCareAction: async (plantId, payload) => {
+    const res = await apiFetch(`/plants/${plantId}/care-actions`, {
       method: "POST",
       body: JSON.stringify(payload),
-    }),
+    });
+    invalidateQueryCache("plants");
+    return res;
+  },
   getCareHistory: (plantId) => apiFetch(`/plants/${plantId}/care-history`),
-  triggerWeatherCron: () =>
-    apiFetch("/cron/trigger-weather", {
+  triggerWeatherCron: async () => {
+    const res = await apiFetch("/cron/trigger-weather", {
       method: "POST",
-    }),
+    });
+    invalidateQueryCache("plants");
+    return res;
+  },
   getWateringDemo: () => apiFetch("/weather/optimization-demo"),
   getOptimizationHistory: (before, signal) => apiFetch(`/weather/optimization-history${before ? `?before=${encodeURIComponent(before)}` : ""}`, { signal }),
   getVapidPublicKey: () => apiFetch("/notifications/vapid-public-key"),
